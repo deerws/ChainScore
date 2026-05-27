@@ -1,0 +1,89 @@
+[
+    {
+        "nome" : "Lucas Moro",
+        "time" : "Internacional",
+        "posicao" : "atacante",
+        "idade" : 22,
+        "gols" : 91,
+        "assistencias" : 30,
+        "cartoes_amarelos" : 6,
+        "cartoes_vermelhos" : 1,
+        "faltas" : 23,
+        "gols_sofridos" : 50
+    },
+    {
+        "nome" : "Pinto",
+        "time" : "Gremio",
+        "posicao" : "zagueiro",
+        "idade" : 26,
+        "gols" : 2,
+        "assistencias" : 4,
+        "cartoes_amarelos" : 15,
+        "cartoes_vermelhos" : 7,
+        "faltas": 56,
+        "gols_sofridos" : 150
+    },
+      {
+    "nome": "Pedro Henrique",
+    "time": "Flamengo",
+    "posicao" : "atacante",
+    "idade": 27,
+    "gols": 12,
+    "assistencias": 5,
+    "cartoes_amarelos": 3,
+    "cartoes_vermelhos": 0,
+    "faltas": 14,
+    "gols_sofridos": 0
+  },
+  {
+    "nome": "Lucas Moura",
+    "time": "São Paulo",
+    "posicao" : "atacante",
+    "idade": 31,
+    "gols": 9,
+    "assistencias": 7,
+    "cartoes_amarelos": 2,
+    "cartoes_vermelhos": 1,
+    "faltas": 11,
+    "gols_sofridos": 0
+  },
+  {
+    "nome": "João Silva",
+    "time": "Palmeiras",
+    "posicao" : "atacante",
+    "idade": 24,
+    "gols": 15,
+    "assistencias": 4,
+    "cartoes_amarelos": 5,
+    "cartoes_vermelhos": 0,
+    "faltas": 20,
+    "gols_sofridos": 0
+  },
+  {
+    "nome": "Carlos Eduardo",
+    "time": "Corinthians",
+    "posicao" : "atacante",
+    "idade": 29,
+    "gols": 6,
+    "assistencias": 3,
+    "cartoes_amarelos": 6,
+    "cartoes_vermelhos": 1,
+    "faltas": 18,
+    "gols_sofridos": 0
+  },
+  {
+    "nome": "Marcos Felipe",
+    "time": "Fluminense",
+    "posicao" : "atacante",
+    "idade": 30,
+    "gols": 0,
+    "assistencias": 0,
+    "cartoes_amarelos": 1,
+    "cartoes_vermelhos": 0,
+    "faltas": 2,
+    "gols_sofridos": 17
+  }
+
+
+
+]
