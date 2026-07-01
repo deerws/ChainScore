@@ -102,38 +102,42 @@ const RECENT_TRANSACTIONS = [
 function ScoreGauge({ score }: { score: number }) {
   const percentage = score / 1000;
   const angle = percentage * 180;
-  
-  // Risk band colors - work in both themes
+  const r = 80;
+  const cx = 100;
+  const cy = 100;
+
   const bands = [
-    { className: "gauge-critical", start: 0, end: 20 },
-    { className: "gauge-poor", start: 20, end: 40 },
-    { className: "gauge-fair", start: 40, end: 60 },
-    { className: "gauge-good", start: 60, end: 80 },
-    { className: "gauge-excellent", start: 80, end: 100 },
+    { className: "gauge-critical", start: 0,  end: 20  },
+    { className: "gauge-poor",     start: 20, end: 40  },
+    { className: "gauge-fair",     start: 40, end: 60  },
+    { className: "gauge-good",     start: 60, end: 80  },
+    { className: "gauge-excellent",start: 80, end: 100 },
   ];
+
+  const activeClass =
+    percentage < 0.2 ? "gauge-critical" :
+    percentage < 0.4 ? "gauge-poor"     :
+    percentage < 0.6 ? "gauge-fair"     :
+    percentage < 0.8 ? "gauge-good"     : "gauge-excellent";
+
+  const arcPoint = (deg: number) => {
+    const rad = (deg - 180) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  const end = arcPoint(angle);
 
   return (
     <div className="relative w-full max-w-[280px] mx-auto">
       <svg viewBox="0 0 200 120" className="w-full">
         {/* Background arc segments */}
         {bands.map((band, i) => {
-          const startAngle = (band.start / 100) * 180;
-          const endAngle = (band.end / 100) * 180;
-          const startRad = (startAngle - 180) * (Math.PI / 180);
-          const endRad = (endAngle - 180) * (Math.PI / 180);
-          const r = 80;
-          const cx = 100;
-          const cy = 100;
-          
-          const x1 = cx + r * Math.cos(startRad);
-          const y1 = cy + r * Math.sin(startRad);
-          const x2 = cx + r * Math.cos(endRad);
-          const y2 = cy + r * Math.sin(endRad);
-          
+          const p1 = arcPoint((band.start / 100) * 180);
+          const p2 = arcPoint((band.end  / 100) * 180);
           return (
             <path
               key={i}
-              d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
+              d={`M ${p1.x} ${p1.y} A ${r} ${r} 0 0 1 ${p2.x} ${p2.y}`}
               fill="none"
               stroke="currentColor"
               className={band.className}
@@ -143,16 +147,18 @@ function ScoreGauge({ score }: { score: number }) {
             />
           );
         })}
-        
-        {/* Active arc */}
-        <path
-          d={`M 20 100 A 80 80 0 ${angle > 90 ? 1 : 0} 1 ${100 + 80 * Math.cos((angle - 180) * Math.PI / 180)} ${100 + 80 * Math.sin((angle - 180) * Math.PI / 180)}`}
-          fill="none"
-          stroke="currentColor"
-          className="gauge-excellent"
-          strokeWidth="12"
-          strokeLinecap="round"
-        />
+
+        {/* Active arc — large-arc-flag always 0 (arc ≤ 180°) */}
+        {angle > 0 && (
+          <path
+            d={`M ${arcPoint(0).x} ${arcPoint(0).y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`}
+            fill="none"
+            stroke="currentColor"
+            className={activeClass}
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+        )}
         
         {/* Center text */}
         <text x="100" y="85" textAnchor="middle" className="headline-serif text-4xl" fill="currentColor">
