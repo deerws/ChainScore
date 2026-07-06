@@ -306,7 +306,7 @@ bool valid = anchor.verifyScore(wallet, score, validUntil, modelVersion);
 
 - [x] **Phase 0** — Project scaffolding and repository structure
 - [x] **Phase 1** — Data engineering: 49,748 liquidation events, 15,809 labeled wallets
-- [x] **Phase 2** — Modeling: 45 features, LR + LightGBM, KS/Gini/AUC/SHAP evaluation
+- [x] **Phase 2** — Modeling: 43 features, LR + LightGBM, KS/Gini/AUC/SHAP evaluation
 - [x] **Phase 3** — REST API (single + batch + portfolio scoring, Swagger, 30-min cache); Next.js institutional dashboard
 - [x] **Phase 3.5** — Backtesting suite: PR curve, decile hit rate analysis, CVaR/VaR portfolio metrics
 - [x] **Phase 4** — Scale to 8,800 wallets with transaction data and retrain — LR ROC-AUC 0.671, KS 0.328, Gini 0.343
