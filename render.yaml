@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chainscore-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALCHEMY_API_KEY
+        sync: false
+      - key: ETHERSCAN_API_KEY
+        sync: false
+      - key: API_KEY_SECRET
+        value: ""
+      - key: PYTHON_VERSION
+        value: "3.11.0"

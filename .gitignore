@@ -34,8 +34,7 @@ data/labeled/*.parquet
 # Indexer log (runtime artifact)
 data/raw/indexer.log
 
-# Models (large binary artifacts — not committed)
-models/*.pkl
+# Models
 models/*.joblib
 models/*.h5
 !models/.gitkeep
