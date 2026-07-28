@@ -330,11 +330,24 @@ def build_feature_matrix(
     labeled_default_path: Path,
     labeled_nondefault_path: Path,
     output_path: Path,
+    max_date: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
-    """Build the full labeled feature matrix from raw data files."""
+    """Build the full labeled feature matrix from raw data files.
+
+    Args:
+        max_date: If set, only transactions on or before this date are included.
+                  Enables point-in-time feature reconstruction for time series analysis.
+    """
     logger.info("Loading raw transaction data...")
     normal_txs = pd.read_parquet(normal_txs_path)
     token_txs = pd.read_parquet(token_txs_path)
+
+    if max_date is not None:
+        max_date_utc = max_date if max_date.tzinfo else max_date.tz_localize("UTC")
+        normal_txs = normal_txs[_to_ts(normal_txs["timeStamp"]) <= max_date_utc]
+        token_txs  = token_txs[_to_ts(token_txs["timeStamp"])   <= max_date_utc]
+        logger.info(f"Filtered to transactions on or before {max_date_utc.date()}: "
+                    f"{len(normal_txs):,} normal txs, {len(token_txs):,} token txs")
 
     logger.info("Loading labels...")
     defaults = pd.read_parquet(labeled_default_path)[["borrower"]].rename(
