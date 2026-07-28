@@ -127,7 +127,8 @@ ChainScore/
 │   ├── 03_model_training.ipynb
 │   ├── 04_model_evaluation.ipynb
 │   ├── 05_stress_testing.ipynb         Synthetic shock scenarios (ETH crash, Aave exit, crises)
-│   └── 06_time_series_scores.ipynb     Monthly score evolution over 12-month window
+│   ├── 06_time_series_scores.ipynb     Monthly score evolution over 12-month window
+│   └── 07_benchmark_aave_rates.ipynb   Credit-adjusted fair rates vs. Aave uniform pricing
 ├── reports/figures/                Evaluation plots (PNG)
 ├── src/
 │   ├── data/
@@ -312,7 +313,7 @@ bool valid = anchor.verifyScore(wallet, score, validUntil, modelVersion);
 - [x] **Phase 3** — REST API (single + batch + portfolio scoring, Swagger, 30-min cache); Next.js institutional dashboard
 - [x] **Phase 3.5** — Backtesting suite: PR curve, decile hit rate analysis, CVaR/VaR portfolio metrics
 - [x] **Phase 4** — Scale to 8,800 wallets with transaction data and retrain — LR ROC-AUC 0.671, KS 0.328, Gini 0.343
-- [x] **Phase 4.5** — Stress testing (ETH crash, Aave exit, LUNA/FTX/USDC crisis replay); time series score evolution with point-in-time feature reconstruction
+- [x] **Phase 4.5** — Stress testing (ETH crash, Aave exit, LUNA/FTX/USDC crisis replay); time series score evolution; benchmark vs. Aave market rates (DeFiLlama data)
 - [ ] **Phase 5** — Deploy API + frontend to Render/Vercel; anchor scores on Sepolia testnet
 
 ---
