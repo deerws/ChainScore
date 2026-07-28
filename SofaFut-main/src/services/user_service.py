@@ -1,7 +1,8 @@
-from SofaFut.src.models.user import User
+from src.models.user import User
+from src.models.lineup import Lineup
 from src.repositories.users_database import UserDataBase
 from src.services.session import Session
-from SofaFut.src.services.team_fantasy_service import TeamFantasyService
+from src.services.team_fantasy_service import TeamFantasyService
 
 """Essa classe é a responsavel por executar a edicao dos dados.
 Apesar de chamar os metodos de edicao de dados da classe Cliente
@@ -40,9 +41,7 @@ class UserService:
         if user is None:
             return "Usuario nao encontrado"
         
-        user.alterar_nome(novo_username)
-
-        return "Username atualizado"
+        return self.user_database.update_username(username, novo_username)
     
     def alterar_senha(self, username, senha_atual, nova_senha):
 
@@ -55,6 +54,7 @@ class UserService:
         
         if user.verificar_senha(senha_atual):
             user.alterar_senha(nova_senha)
+            return "Senha atualizada"
         else: 
             return "Senha incorreta"
         
@@ -64,6 +64,56 @@ class UserService:
 
         if user is not None:
             user.pontuacao += pontuacao
+            return "Pontuacao atualizada"
 
         else: 
             return "Usuario nao encontrado"
+
+    def gerar_ranking_usuarios(self) -> list[User]:
+        ranking = self.user_database.listar_usuarios()
+        ranking.sort(
+            key=lambda user: (
+                -user.pontuacao,
+                -user.saldo,
+                user.nome,
+            )
+        )
+        return ranking
+
+    def formatar_ranking_usuarios(self, ranking: list[User]):
+        if not ranking:
+            return "Ranking de usuarios vazio"
+
+        linhas = []
+        for posicao, user in enumerate(ranking, start=1):
+            linhas.append(
+                f"{posicao}. {user.nome} - "
+                f"{user.pontuacao} pontos - saldo {user.saldo:.2f}"
+            )
+
+        return "\n".join(linhas)
+
+    def gerar_historico_pontuacao_usuario(self, username) -> list[Lineup]:
+        user = self.user_database.search_user(username)
+
+        if user is None:
+            return []
+
+        historico = list(user.team_fantasy.escalacoes.values())
+        historico.sort(key=lambda escalacao: escalacao.rodada)
+        return historico
+
+    def formatar_historico_pontuacao_usuario(
+        self,
+        historico: list[Lineup],
+    ):
+        if not historico:
+            return "Historico de pontuacao vazio"
+
+        linhas = []
+        for escalacao in historico:
+            linhas.append(
+                f"Rodada {escalacao.rodada}: {escalacao.pontuacao} pontos"
+            )
+
+        return "\n".join(linhas)

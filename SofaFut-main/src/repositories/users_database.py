@@ -16,3 +16,18 @@ class UserDataBase:
 
     def search_user(self, username):
         return self.__usuarios_cadastrados.get(username)
+
+    def listar_usuarios(self):
+        return list(self.__usuarios_cadastrados.values())
+
+    def update_username(self, username, novo_username):
+        if novo_username in self.__usuarios_cadastrados:
+            return "Usuario com esse username ja cadastrado"
+
+        user = self.__usuarios_cadastrados.pop(username, None)
+        if user is None:
+            return "Usuario nao encontrado"
+
+        user.alterar_nome(novo_username)
+        self.__usuarios_cadastrados[novo_username] = user
+        return "Username atualizado"

@@ -1,179 +1,219 @@
-from src.repositories.players_repository import PlayerRepository
-from src.services.player_service import PlayerService
-from src.models.estatistics import Estatisticas
-#from src.external.api_client import SofaScoreApiClient
-from src.services.team_fantasy_service import TeamFantasyService
-from src.models.match import Match
-from src.models.rounds import Round
-from src.models.lineup import Lineup
-from src.models.player_match import MatchPlayerStats
-from src.models.player_fantasy import PlayerFantasy
-from src.models.player import Player
-from src.repositories.rounds_repository import RoundRepository
-from src.models.club import Club
+import os
+import tkinter as tk
+
+from src.controllers import AppController
+from src.controllers import AuthController
+from src.controllers import LineupController
+from src.controllers import MarketController
+from src.controllers import PlayerCatalogController
+from src.controllers import RankingController
+from src.controllers import RoundController
+from src.views import ConsoleView
+from src.views import SofaFutGui
 
 
 def main():
+    app_controller = AppController()
+    auth_controller = AuthController(app_controller)
+    player_catalog_controller = PlayerCatalogController(app_controller)
+    round_controller = RoundController(app_controller)
+    lineup_controller = LineupController(app_controller)
+    ranking_controller = RankingController(app_controller)
+    market_controller = MarketController(app_controller)
 
-    # api = SofaScoreApiClient(timeout=10)
-    
-    # try:
-    #     data = api.search("internacional")
-    # except Exception as e:
-    #     print(f"Erro: {e}")
+    if os.getenv("SOFAFUT_VIEW") == "console":
+        executar_console(
+            auth_controller,
+            player_catalog_controller,
+            round_controller,
+            lineup_controller,
+            ranking_controller,
+            market_controller,
+        )
+        return
 
-    # =========================
-    # Players
-    # =========================
-    alan = Player("Alan Patrick", None, "meia", 33)
-    borre = Player("Borré", None, "atacante", 28)
-    rochet = Player("Rochet", None, "goleiro", 31)
+    try:
+        app = _criar_app_grafico(
+            auth_controller=auth_controller,
+            player_catalog_controller=player_catalog_controller,
+            round_controller=round_controller,
+            lineup_controller=lineup_controller,
+            ranking_controller=ranking_controller,
+            market_controller=market_controller,
+        )
+        app.run()
+    except tk.TclError as erro:
+        print(f"Nao foi possivel abrir interface grafica: {erro}")
+        print("Rodando fluxo de console. Para forcar console: SOFAFUT_VIEW=console")
+        executar_console(
+            auth_controller,
+            player_catalog_controller,
+            round_controller,
+            lineup_controller,
+            ranking_controller,
+            market_controller,
+        )
 
-    arrascaeta = Player("Arrascaeta", None, "meia", 30)
-    pedro = Player("Pedro", None, "atacante", 27)
-    leo_pereira = Player("Leo Pereira", None, "zagueiro", 29)
 
-    # =========================
-    # Clubs
-    # =========================
-    internacional = Club("Internacional", [alan, borre, rochet], 0, 0, 0, 1)
-    flamengo = Club("Flamengo", [arrascaeta, pedro, leo_pereira], 0, 0, 0, 2)
+def executar_console(
+    auth_controller,
+    player_catalog_controller,
+    round_controller,
+    lineup_controller,
+    ranking_controller,
+    market_controller=None,
+):
+    view = ConsoleView()
 
-    # liga os players aos clubes
-    alan.clube = internacional
-    borre.clube = internacional
-    rochet.clube = internacional
+    if not os.getenv("API_FOOTBALL_KEY"):
+        print("Aviso: API_FOOTBALL_KEY ausente. O console só funcionará com caches já existentes.")
 
-    arrascaeta.clube = flamengo
-    pedro.clube = flamengo
-    leo_pereira.clube = flamengo
+    try:
+        testar_fluxo_console(
+            view=view,
+            auth_controller=auth_controller,
+            player_catalog_controller=player_catalog_controller,
+            round_controller=round_controller,
+            lineup_controller=lineup_controller,
+            ranking_controller=ranking_controller,
+        )
+    except RuntimeError as erro:
+        view.mostrar_erro(str(erro))
 
-    # =========================
-    # MatchPlayerStats
-    # =========================
-    stats_alan = MatchPlayerStats(
-        jogador=alan,
-        atuou=True,
-        titular=True,
-        gols=1,
-        assistencias=1,
-        cartoes_amarelos=1,
-        cartoes_vermelhos=0,
-        faltas=2,
-        gols_sofridos=0
+
+def testar_fluxo_console(
+    view,
+    auth_controller,
+    player_catalog_controller,
+    round_controller,
+    lineup_controller,
+    ranking_controller,
+):
+    liga_id = _env_int("API_FOOTBALL_LEAGUE_ID", padrao=71)
+    temporada = _env_int("API_FOOTBALL_SEASON", padrao=2024)
+    numero_rodada = _env_int("SOFAFUT_ROUND_NUMBER", padrao=2)
+    max_partidas = _env_int("API_FOOTBALL_MAX_FIXTURES", padrao=2)
+
+    username = "lucas"
+    senha = "senha"
+
+    auth_controller.cadastrar(
+        username=username,
+        senha=senha,
+        cpf="000",
+        email="lucas@email.com",
+        nome_team_fantasy="SofaFut FC",
+    )
+    view.mostrar_login(auth_controller.login(username, senha))
+
+    view.mostrar_temporada_rodada(temporada, numero_rodada)
+
+    jogadores_temporada = player_catalog_controller.carregar_jogadores_temporada(
+        liga_id=liga_id,
+        temporada=temporada,
+    )
+    view.mostrar_catalogo_jogadores(jogadores_temporada)
+
+    dados_rodada = round_controller.baixar_dados_rodada(
+        liga_id=liga_id,
+        temporada=temporada,
+        numero_rodada=numero_rodada,
+        status="FT",
+        max_partidas=max_partidas,
+    )
+    view.mostrar_resumo_cache_rodada(dados_rodada)
+
+    jogadores_disponiveis = round_controller.listar_jogadores_disponiveis(
+        liga_id=liga_id,
+        temporada=temporada,
+        numero_rodada=numero_rodada,
+    )
+    view.mostrar_jogadores_disponiveis_rodada(jogadores_disponiveis)
+
+    if len(jogadores_disponiveis) < 11:
+        raise RuntimeError("Nao ha jogadores suficientes no cache para montar escalacao.")
+
+    jogadores = lineup_controller.selecionar_players_do_catalogo(
+        jogadores_disponiveis[:11]
     )
 
-    stats_borre = MatchPlayerStats(
-        jogador=borre,
-        atuou=True,
-        titular=True,
-        gols=1,
-        assistencias=0,
-        cartoes_amarelos=0,
-        cartoes_vermelhos=0,
-        faltas=1,
-        gols_sofridos=0
+    if len(jogadores) < 11:
+        raise RuntimeError(
+            "Catalogo de jogadores ainda nao contem os 11 jogadores escolhidos. "
+            "Atualize manualmente o arquivo data/api_football/players_available.json."
+        )
+
+    jogadores_fantasy = lineup_controller.criar_escalacao_fantasy(jogadores)
+
+    rodada_model = round_controller.montar_rodada_por_cache(
+        liga_id=liga_id,
+        temporada=temporada,
+        numero_rodada=numero_rodada,
+        jogadores_escalados=jogadores,
+    )
+    round_controller.adicionar_rodada(rodada_model)
+
+    pontuacao_total = lineup_controller.executar_rodada(
+        username=username,
+        numero_rodada=numero_rodada,
+        jogadores_fantasy=jogadores_fantasy,
+    )
+    escalacao = lineup_controller.buscar_escalacao(numero_rodada)
+    jogadores_calculados = escalacao.jogadores if escalacao is not None else jogadores_fantasy
+
+    view.mostrar_pontuacao(
+        numero_rodada,
+        pontuacao_total,
+        jogadores_calculados,
+    )
+    view.mostrar_ranking(ranking_controller.formatar_ranking_usuarios())
+
+
+def _criar_app_grafico(
+    auth_controller,
+    player_catalog_controller,
+    round_controller,
+    lineup_controller,
+    ranking_controller,
+    market_controller,
+):
+    if os.getenv("SOFAFUT_GUI") == "tkinter":
+        return SofaFutGui(
+            auth_controller=auth_controller,
+            player_catalog_controller=player_catalog_controller,
+            round_controller=round_controller,
+            lineup_controller=lineup_controller,
+            ranking_controller=ranking_controller,
+            market_controller=market_controller,
+        )
+
+    try:
+        from src.views.pyside_view import SofaFutPySideGui
+    except ImportError:
+        return SofaFutGui(
+            auth_controller=auth_controller,
+            player_catalog_controller=player_catalog_controller,
+            round_controller=round_controller,
+            lineup_controller=lineup_controller,
+            ranking_controller=ranking_controller,
+            market_controller=market_controller,
+        )
+
+    return SofaFutPySideGui(
+        auth_controller=auth_controller,
+        player_catalog_controller=player_catalog_controller,
+        round_controller=round_controller,
+        lineup_controller=lineup_controller,
+        ranking_controller=ranking_controller,
+        market_controller=market_controller,
     )
 
-    stats_rochet = MatchPlayerStats(
-        jogador=rochet,
-        atuou=True,
-        titular=True,
-        gols=0,
-        assistencias=0,
-        cartoes_amarelos=0,
-        cartoes_vermelhos=0,
-        faltas=0,
-        gols_sofridos=1
-    )
 
-    stats_arrascaeta = MatchPlayerStats(
-        jogador=arrascaeta,
-        atuou=True,
-        titular=True,
-        gols=0,
-        assistencias=1,
-        cartoes_amarelos=0,
-        cartoes_vermelhos=0,
-        faltas=3,
-        gols_sofridos=0
-    )
-
-    stats_pedro = MatchPlayerStats(
-        jogador=pedro,
-        atuou=True,
-        titular=True,
-        gols=1,
-        assistencias=0,
-        cartoes_amarelos=1,
-        cartoes_vermelhos=0,
-        faltas=1,
-        gols_sofridos=0
-    )
-
-    stats_leo = MatchPlayerStats(
-        jogador=leo_pereira,
-        atuou=True,
-        titular=True,
-        gols=0,
-        assistencias=0,
-        cartoes_amarelos=0,
-        cartoes_vermelhos=0,
-        faltas=2,
-        gols_sofridos=2
-    )
-
-    # =========================
-    # Match
-    # =========================
-    partida = Match(
-        mandante=internacional,
-        visitante=flamengo,
-        data="2026-05-17",
-        jogadores_partida=[
-            stats_alan,
-            stats_borre,
-            stats_rochet,
-            stats_arrascaeta,
-            stats_pedro,
-            stats_leo
-        ]
-    )
-
-    # =========================
-    # Round 0
-    # =========================
-    rodada0 = Round(0)
-    rodada0.adicionar_partidas_rodada(partida)
-
-    # =========================
-    # Repository de rodadas
-    # =========================
-    rodadas_repo = RoundRepository()
-    rodadas_repo.adicionar_rodada(rodada0)
-
-    # =========================
-    # Escalacao fantasy
-    # =========================
-    fantasy_alan = PlayerFantasy(alan, True, 0)
-    fantasy_borre = PlayerFantasy(borre, False, 0)
-    fantasy_pedro = PlayerFantasy(pedro, False, 0)
-
-    escalacao = Lineup(
-        rodada=0,
-        jogadores=[fantasy_alan, fantasy_borre, fantasy_pedro]
-    )
-
-    # =========================
-    # Calcula pontuacao
-    # =========================
-    service = TeamFantasyService()
-    pontuacao = service.calcular_pontuacao_lineup(escalacao, rodadas_repo)
-
-    print("Pontuação total da escalação:", pontuacao)
-
-    for jogador in escalacao.jogadores:
-        print(f"{jogador.jogador.nome} = {jogador.pontuacao}")
+def _env_int(nome, padrao=None):
+    valor = os.getenv(nome)
+    if not valor:
+        return padrao
+    return int(valor)
 
 
 if __name__ == "__main__":
