@@ -289,6 +289,35 @@ function TransactionChart() {
   );
 }
 
+// ── Status Badge ───────────────────────────────────────────────────────────
+
+type BadgeType = "live" | "sample" | "beta" | "roadmap";
+
+const BADGE_CONFIG: Record<BadgeType, { label: string; color: string; bg: string; tooltip?: string }> = {
+  live:    { label: "Live",        color: "var(--positive)", bg: "rgba(22,101,52,0.12)"   },
+  sample:  { label: "Sample Data", color: "var(--warning)",  bg: "rgba(217,119,6,0.12)",
+             tooltip: "Illustrative data — displayed for demonstration purposes. Real values are populated when a wallet is analyzed via the API." },
+  beta:    { label: "Beta",        color: "var(--primary)",  bg: "rgba(37,99,235,0.12)"  },
+  roadmap: { label: "Roadmap",     color: "var(--muted)",    bg: "var(--border)"          },
+};
+
+function StatusBadge({ type }: { type: BadgeType }) {
+  const cfg = BADGE_CONFIG[type];
+  return (
+    <span
+      title={cfg.tooltip}
+      className="text-[9px] uppercase tracking-widest px-2 py-0.5 rounded font-semibold"
+      style={{
+        color: cfg.color,
+        background: cfg.bg,
+        cursor: cfg.tooltip ? "help" : "default",
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
 // ── Page Component ─────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -422,9 +451,10 @@ export default function Home() {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* LEFT: Score Gauge */}
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-xs uppercase tracking-wider mb-6 font-medium" style={{ color: 'var(--muted)' }}>
-              Credit Score
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>Credit Score</h2>
+              <StatusBadge type="live" />
+            </div>
             <ScoreGauge score={score} />
             <div className="flex justify-center gap-4 mt-4 text-[10px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--negative)' }} /> High</span>
@@ -439,7 +469,7 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             {/* Top row - main metrics */}
             <div className="grid grid-cols-3 gap-4">
-              <div className="border p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+              <div className="border p-4 rounded card-shadow relative" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
                 <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Risk Tier</p>
                 <p className="text-xl font-medium capitalize" style={{ color: 'var(--positive)' }}>
                   {riskTier.replace("_", " ")}
@@ -457,7 +487,10 @@ export default function Home() {
 
             {/* Key stats table */}
             <div className="border p-4 rounded card-shadow flex-1" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-              <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Key Statistics</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Key Statistics</p>
+                <StatusBadge type="sample" />
+              </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span style={{ color: 'var(--muted)' }}>Wallet Age</span>
@@ -492,9 +525,10 @@ export default function Home() {
                 <h2 className="text-sm font-medium mb-1">{"What's Driving This Score?"}</h2>
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>SHAP-based feature importance analysis</p>
               </div>
-              <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded" style={{ color: 'var(--muted)', background: 'var(--border)' }}>
-                ML Explainability
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded" style={{ color: 'var(--muted)', background: 'var(--border)' }}>ML Explainability</span>
+                <StatusBadge type="live" />
+              </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -531,7 +565,10 @@ export default function Home() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           {/* Protocol Exposure Table */}
           <div className="lg:col-span-2 border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-sm font-medium mb-4">Protocol Exposure</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium">Protocol Exposure</h2>
+              <StatusBadge type="sample" />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full data-table">
                 <thead>
@@ -572,7 +609,10 @@ export default function Home() {
 
           {/* Activity Heatmap */}
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-sm font-medium mb-1">Activity Heatmap</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-medium">Activity Heatmap</h2>
+              <StatusBadge type="sample" />
+            </div>
             <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>Last 90 days</p>
             <ActivityHeatmap />
             <div className="flex items-center gap-2 mt-4 text-[10px]" style={{ color: 'var(--muted)' }}>
@@ -590,7 +630,10 @@ export default function Home() {
         {/* ── TRANSACTION HISTORY CHART ───────────────────────────────── */}
         <section className="mb-10">
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-sm font-medium mb-1">Transaction History</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-medium">Transaction History</h2>
+              <StatusBadge type="sample" />
+            </div>
             <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>Monthly transaction count (12 months)</p>
             <TransactionChart />
           </div>
@@ -599,7 +642,10 @@ export default function Home() {
         {/* ── RISK ASSESSMENT ─────────────────────────────────────────── */}
         <section className="mb-10">
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-sm font-medium mb-4">Risk Assessment</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium">Risk Assessment</h2>
+              <StatusBadge type="sample" />
+            </div>
             <div className="max-w-3xl">
               <p className="leading-relaxed mb-4">
                 This wallet demonstrates strong overall creditworthiness with a low probability of default. 
@@ -628,7 +674,10 @@ export default function Home() {
         {/* ── RECENT ACTIVITY TABLE ───────────────────────────────────── */}
         <section className="mb-10">
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <h2 className="text-sm font-medium mb-4">Recent Activity</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium">Recent Activity</h2>
+              <StatusBadge type="sample" />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full data-table">
                 <thead>
@@ -671,16 +720,55 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs" style={{ color: 'var(--muted)' }}>
             <div>
               <p className="font-medium mb-1" style={{ color: 'var(--foreground)' }}>ChainScore</p>
-              <p>Institutional-grade on-chain credit intelligence</p>
+              <p>On-chain DeFi credit risk scoring</p>
             </div>
             <div className="flex gap-6">
               <a href="https://github.com/deerws/ChainScore" className="hover:opacity-70 transition-opacity">GitHub</a>
               <a href="https://br.linkedin.com/in/andrepinheiropaes" className="hover:opacity-70 transition-opacity">@andrepinheiropaes</a>
             </div>
           </div>
-          <p className="text-[10px] mt-4 uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-            For informational purposes only. Not financial advice.
-          </p>
+
+          {/* Methodological disclaimer */}
+          <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-[10px] uppercase tracking-widest mb-2 font-semibold" style={{ color: 'var(--muted)' }}>
+              Methodological Disclaimer
+            </p>
+            <p className="text-xs leading-relaxed max-w-4xl" style={{ color: 'var(--muted)' }}>
+              ChainScore generates a{" "}
+              <strong style={{ color: 'var(--foreground)' }}>DeFi liquidation risk score</strong>
+              {" "}— a behavioral proxy for credit default probability calibrated on 49,748 Aave V2
+              liquidation events (2020–2023). Liquidation risk is not equivalent to traditional credit
+              default: it measures the probability of collateral seizure by the protocol due to an
+              undercollateralized position, not a missed repayment schedule. Walk-forward validated
+              AUC ≈ 0.67 indicates meaningful discriminatory power for relative ranking and pricing
+              adjustments.{" "}
+              <strong style={{ color: 'var(--foreground)' }}>
+                Not suitable for regulated credit decisions or Basel III capital calculations.
+              </strong>{" "}
+              Sections marked <span style={{ color: 'var(--warning)' }}>Sample Data</span> display
+              illustrative values for demonstration; live scores are populated when a wallet is
+              analyzed via the API. For full methodology see{" "}
+              <code className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                notebooks/09_target_variable_analysis.ipynb
+              </code>.
+            </p>
+          </div>
+
+          {/* Status legend */}
+          <div className="flex flex-wrap gap-4 mt-4 text-[10px]" style={{ color: 'var(--muted)' }}>
+            <span className="flex items-center gap-1.5">
+              <StatusBadge type="live" /> Real-time API data
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusBadge type="sample" /> Illustrative — hover for details
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusBadge type="beta" /> In active development
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusBadge type="roadmap" /> Planned feature
+            </span>
+          </div>
         </footer>
       </div>
     </main>

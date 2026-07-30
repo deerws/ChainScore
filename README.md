@@ -39,17 +39,25 @@ The model's predicted probability of default (PD) is converted to a 0–1000 sca
 
 ## Dashboard
 
-Institutional-style analyst interface built with Next.js — dark/light mode, live API integration, and a full credit report layout:
+Institutional-style analyst interface built with Next.js — dark/light mode, live API integration, and a full credit report layout.
 
-- **Score gauge** — semicircle with color-coded risk bands
-- **KPI cards** — risk tier, PD estimate, score validity window
-- **SHAP chart** — horizontal bar chart showing which features pushed the score up or down
-- **Protocol exposure table** — Aave, Compound, Uniswap, MakerDAO, Lido
-- **Activity heatmap** — 90-day on-chain activity grid
-- **Transaction history** — 12-month line chart
-- **Risk assessment** — analyst-style narrative with bullet-point findings
+### Features
 
-> *Screenshot coming — run locally with `bun run dev` to see the full UI.*
+| Feature | Status | Notes |
+|---|:---:|---|
+| Score gauge (0–1000, color-coded tiers) | ✅ Live | Real API data via `/v1/score` |
+| SHAP explainability chart | ✅ Live | Which features drove the score up/down |
+| KPI cards — risk tier, PD, validity window | ✅ Live | Real API data |
+| Protocol exposure table | 🔶 Sample | Illustrative — layout demo |
+| Activity heatmap (90-day) | 🔶 Sample | Illustrative — layout demo |
+| Transaction history chart | 🔶 Sample | Illustrative — layout demo |
+| Risk assessment narrative | 🔶 Sample | Illustrative — layout demo |
+| Recent activity feed | 🔶 Sample | Illustrative — layout demo |
+| Portfolio builder (multi-wallet, weights) | 🗺 Roadmap | Phase 3 |
+| Real-time event monitoring (webhooks) | 🗺 Roadmap | Phase 4 |
+| On-chain score anchoring (Sepolia) | 🗺 Roadmap | Phase 5 |
+
+> *Run locally with `bun run dev` to see the full UI. The dashboard labels each section (Live / Sample / Roadmap) so status is always visible.*
 
 ---
 
@@ -366,7 +374,12 @@ bool valid = anchor.verifyScore(wallet, score, validUntil, modelVersion);
 - [x] **Phase 3.5** — Backtesting suite: PR curve, decile hit rate analysis, CVaR/VaR portfolio metrics
 - [x] **Phase 4** — Scale to 8,800 wallets with transaction data and retrain — LR ROC-AUC 0.671, KS 0.328, Gini 0.343
 - [x] **Phase 4.5** — Stress testing (ETH crash, Aave exit, LUNA/FTX/USDC crisis replay); time series score evolution; benchmark vs. Aave market rates (DeFiLlama data)
-- [ ] **Phase 5** — Deploy API + frontend to Render/Vercel; anchor scores on Sepolia testnet
+- [x] **Phase 5** — Deploy API to Render, frontend to Vercel; production-ready with environment variable management
+- [x] **Phase 5.1 — Methodological rigor** — Walk-forward CV (6 quarterly folds), out-of-time validation (2021–2022 → 2023), bootstrap CI on AUC, target variable analysis (Mann-Whitney U, abandoned-position heuristic, honest scope statement), README "Methodological scope" section
+- [x] **Phase 5.2 — Dashboard transparency** — Live / Sample Data / Beta / Roadmap status badges on every section, footer methodological disclaimer (DeFi liquidation risk ≠ traditional creditworthiness), status legend
+- [ ] **Phase 5.3 — Portfolio Builder** — Multi-wallet sidebar with custom weights, weighted average PD, VaR/CVaR aggregation, portfolio composition chart
+- [ ] **Phase 5.4 — Real-time monitoring** — Alchemy Notify webhooks, SSE endpoint, "Watch Wallet" UI, health-factor alert stream
+- [ ] **Phase 5.5 — On-chain anchoring** — Deploy `ChainScoreAnchor.sol` to Sepolia, `/v1/anchor` endpoint, score verification flow
 
 ---
 
