@@ -77,6 +77,54 @@ Logistic Regression continues to lead on rank-ordering metrics (AUC, KS, Gini), 
 
 ---
 
+## Methodological scope
+
+> **What ChainScore predicts — and what it doesn't.**
+
+ChainScore generates a **DeFi liquidation risk score**: a behavioral proxy for credit default probability in decentralized lending protocols. Trained on 49,748 Aave V2 liquidation events (2020–2023), it ranks wallets by their likelihood of experiencing a forced collateral seizure.
+
+### Liquidation as a default proxy
+
+In DeFi there is no explicit repayment schedule — the protocol enforces solvency mechanically. A liquidation event (health factor < 1.0 triggering forced collateral sale) is the closest observable analog to a traditional credit default:
+
+| | Traditional credit default | Aave V2 liquidation (our proxy) |
+|--|---|---|
+| **Trigger** | Missed scheduled payment | Health factor falls below threshold |
+| **Involuntary?** | Yes | Yes — borrower loses collateral at 5–15% discount |
+| **Financial distress** | Borrower unable/unwilling to pay | Borrower unable/unwilling to add collateral |
+| **Observable?** | Credit bureau only | Publicly auditable on-chain |
+
+The model captures **behavioral precursors** — over-leveraging patterns, low repay-to-borrow ratios, burst activity — not just price moves. Feature separability between liquidated and non-liquidated wallets is statistically confirmed (see `notebooks/09_target_variable_analysis.ipynb`).
+
+### Known limitations
+
+- **Market-crash liquidations**: a wallet with 150% collateral may be liquidated during extreme volatility (e.g., ETH −40%) despite responsible borrowing. Behavioral features partially mitigate this, but the signal is not fully separable.
+- **Aave V2 only**: the model is calibrated on one protocol. Cross-protocol defaults (Compound, MakerDAO) are not yet included in the training labels.
+- **Not production-grade PD**: walk-forward validated AUC of ~0.67 demonstrates meaningful discriminatory power for relative ranking and pricing adjustments, but does not meet regulatory standards for PD models under Basel III.
+
+### Validation methodology
+
+The original single temporal split (block 17,000,000, n=205 test wallets) produced a wide confidence interval. Phase 1 adds:
+
+- **Walk-forward cross-validation** (6 quarterly folds): mean AUC ± std across time windows — see `notebooks/08_temporal_validation.ipynb`
+- **Out-of-time validation**: 2021–2022 train → 2023 test, the strictest temporal holdout
+- **Point-in-time guarantee**: `builder.py` accepts a `max_date` cutoff that filters all transactions after the scoring date, preventing look-ahead bias in both training and inference
+
+### Recommended use cases ✓
+
+- Relative ranking of DeFi borrowers for protocol-level risk management
+- Pricing adjustments for uncollateralized or under-collateralized DeFi lending
+- Portfolio-level credit risk aggregation across multiple wallets
+- Research into on-chain behavioral signals for credit assessment
+
+### Out of scope for current version ✗
+
+- Regulated consumer credit decisions
+- Absolute PD estimates for Basel III capital calculations
+- Cross-chain scoring (Ethereum mainnet only)
+
+---
+
 ## Methodology
 
 ### Feature engineering — 43 features across 5 families
@@ -104,6 +152,8 @@ Logistic Regression continues to lead on rank-ordering metrics (AUC, KS, Gini), 
 - **Default labels**: 49,748 `LiquidationCall` events from the Aave V2 LendingPool contract (blocks 11,500,000 – 25,000,000), yielding 10,809 unique liquidated borrowers.
 - **Non-default cohort**: Active borrowers with no liquidation history sampled from the same observation window.
 - **Train/test split**: Temporal cutoff at block 17,000,000 (~April 2023) to prevent data leakage. Wallets with first activity before the cutoff go into training; those after go into testing. This mirrors production deployment constraints.
+- **Walk-forward validation**: 6-fold quarterly walk-forward cross-validation (train on quarters 0..k, test on k+1) provides mean AUC ± std across time windows — more robust than a single split. See `notebooks/08_temporal_validation.ipynb`.
+- **Out-of-time validation**: Model trained on 2021–2022 data and evaluated on 2023 wallets exclusively — the strictest form of temporal holdout.
 - **Calibration**: Both models are probability-calibrated via Platt scaling to produce reliable PD estimates, not just rank orderings.
 
 ---
@@ -126,9 +176,11 @@ ChainScore/
 │   ├── 02_feature_engineering.ipynb
 │   ├── 03_model_training.ipynb
 │   ├── 04_model_evaluation.ipynb
-│   ├── 05_stress_testing.ipynb         Synthetic shock scenarios (ETH crash, Aave exit, crises)
-│   ├── 06_time_series_scores.ipynb     Monthly score evolution over 12-month window
-│   └── 07_benchmark_aave_rates.ipynb   Credit-adjusted fair rates vs. Aave uniform pricing
+│   ├── 05_stress_testing.ipynb             Synthetic shock scenarios (ETH crash, Aave exit, crises)
+│   ├── 06_time_series_scores.ipynb         Monthly score evolution over 12-month window
+│   ├── 07_benchmark_aave_rates.ipynb       Credit-adjusted fair rates vs. Aave uniform pricing
+│   ├── 08_temporal_validation.ipynb        Walk-forward CV + out-of-time validation (Phase 1)
+│   └── 09_target_variable_analysis.ipynb   Default proxy methodology and scope (Phase 1)
 ├── reports/figures/                Evaluation plots (PNG)
 ├── src/
 │   ├── data/
