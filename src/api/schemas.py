@@ -155,6 +155,39 @@ class PortfolioStats(BaseModel):
     scored_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# ── Blockchain anchoring ───────────────────────────────────────────────────
+
+class AnchorResponse(BaseModel):
+    wallet_address: str
+    score: int
+    tx_hash: str = Field(description="Sepolia transaction hash")
+    score_hash: str = Field(description="keccak256 commitment anchored on-chain")
+    valid_until: int = Field(description="Unix timestamp — score expires after this")
+    valid_until_iso: str
+    etherscan_url: str
+
+
+class OnChainRecord(BaseModel):
+    score_hash: str
+    issued_at: int
+    issued_at_iso: str
+    valid_until: int
+    valid_until_iso: str
+    model_version: int
+    is_expired: bool
+    etherscan_url: str
+
+
+class VerifyResponse(BaseModel):
+    wallet_address: str
+    anchored: bool = Field(description="True if a score record exists on-chain")
+    is_valid: bool | None = Field(
+        default=None,
+        description="True if the claimed score matches the on-chain hash (null when no record)",
+    )
+    record: OnChainRecord | None = Field(default=None)
+
+
 # ── System ─────────────────────────────────────────────────────────────────
 
 class HealthResponse(BaseModel):

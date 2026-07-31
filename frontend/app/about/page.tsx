@@ -133,10 +133,10 @@ function Step({
 export default function About() {
   return (
     <main className="flex flex-col flex-1">
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row max-w-[1100px] mx-auto w-full">
         {/* Left Panel - Table of Contents */}
         <div
-          className="lg:w-64 p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4"
+          className="lg:w-52 shrink-0 p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4"
           style={{ borderColor: "var(--border)" }}
         >
           <div
@@ -167,8 +167,8 @@ export default function About() {
         </div>
 
         {/* Right Panel - Content */}
-        <div className="flex-1 p-6 lg:p-8 overflow-auto">
-          <div className="max-w-3xl flex flex-col gap-10">
+        <div className="flex-1 min-w-0 p-6 lg:p-10 overflow-auto">
+          <div className="flex flex-col gap-10">
             {/* Overview */}
             <div id="overview" className="flex flex-col gap-4">
               <div className="flex items-center gap-3">

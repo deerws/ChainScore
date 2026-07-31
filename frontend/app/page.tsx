@@ -361,6 +361,33 @@ export default function Home() {
   // Stop stream when user changes wallet
   useEffect(() => { stopWatch(); }, [apiResult]);
 
+  // Anchor state
+  const [anchoring, setAnchoring] = useState(false);
+  const [anchorResult, setAnchorResult] = useState<{
+    tx_hash: string; score_hash: string; valid_until_iso: string; etherscan_url: string;
+  } | null>(null);
+  const [anchorError, setAnchorError] = useState<string | null>(null);
+
+  async function anchorScore() {
+    if (!apiResult) return;
+    setAnchoring(true);
+    setAnchorError(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/anchor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_address: apiResult.wallet_address }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail ?? `HTTP ${res.status}`);
+      setAnchorResult(data);
+    } catch (e) {
+      setAnchorError(e instanceof Error ? e.message : "Anchor failed.");
+    } finally {
+      setAnchoring(false);
+    }
+  }
+
   const hasResult = apiResult !== null;
 
   // Use watch values when active, otherwise API result values
@@ -604,6 +631,79 @@ export default function Home() {
                   <span className="font-mono" style={{ color: 'var(--primary)' }}>{MOCK_WALLET.smartMoneyPercentile}th</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── ON-CHAIN ANCHORING ──────────────────────────────────────── */}
+        <section className="mb-10">
+          <div className="border rounded card-shadow overflow-hidden" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>
+                  On-Chain Score Proof
+                </h2>
+                <StatusBadge type="beta" />
+              </div>
+              {!anchorResult && (
+                <button
+                  onClick={anchorScore}
+                  disabled={anchoring}
+                  className="text-xs px-3 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
+                  style={{ background: 'var(--primary)', color: '#fff' }}
+                >
+                  {anchoring ? "Anchoring…" : "Anchor Score on Sepolia →"}
+                </button>
+              )}
+            </div>
+            <div className="px-6 py-5">
+              {!anchorResult && !anchorError && (
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                  Publish a cryptographic commitment of this score to the Sepolia testnet.
+                  Lenders can verify the score was issued at a specific time without trusting the ChainScore server.
+                </p>
+              )}
+              {anchorError && (
+                <p className="text-sm" style={{ color: 'var(--negative)' }}>{anchorError}</p>
+              )}
+              {anchorResult && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ background: 'var(--positive)' }} />
+                    <span className="text-sm font-medium" style={{ color: 'var(--positive)' }}>
+                      Score anchored on Sepolia
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div>
+                      <p className="uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Tx Hash</p>
+                      <a
+                        href={anchorResult.etherscan_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:underline break-all"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        {anchorResult.tx_hash.slice(0, 20)}…{anchorResult.tx_hash.slice(-8)} ↗
+                      </a>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Score Hash</p>
+                      <p className="break-all" style={{ color: 'var(--foreground)' }}>
+                        {anchorResult.score_hash.slice(0, 20)}…
+                      </p>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Valid Until</p>
+                      <p style={{ color: 'var(--foreground)' }}>{anchorResult.valid_until_iso.replace("T", " ").slice(0, 19)} UTC</p>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Network</p>
+                      <p style={{ color: 'var(--foreground)' }}>Ethereum Sepolia Testnet</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

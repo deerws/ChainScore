@@ -34,17 +34,21 @@ from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.schemas import (
+    AnchorResponse,
     BatchScoreRequest,
     BatchScoreResponse,
     BatchWalletResult,
     HealthResponse,
+    OnChainRecord,
     PortfolioRequest,
     PortfolioStats,
     ScoreRequest,
     ScoreResponse,
     ShapFactor,
     TierBreakdown,
+    VerifyResponse,
 )
+from src.blockchain.anchor import AnchorClient
 from src.data.ethereum_client import EthereumClient
 from src.models.predict import ChainScorePredictor
 
@@ -54,6 +58,7 @@ logger = logging.getLogger(__name__)
 _client: EthereumClient | None = None
 _predictor: ChainScorePredictor | None = None
 _ethereum_connected: bool = False
+_anchor: AnchorClient | None = None
 
 # ── Score cache (in-memory, 30-min TTL) ───────────────────────────────────
 _CACHE_TTL = 1800  # seconds
@@ -93,7 +98,7 @@ def _check_api_key(key: str | None = Security(api_key_header)) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load models and establish Ethereum connection at startup."""
-    global _client, _predictor, _ethereum_connected
+    global _client, _predictor, _ethereum_connected, _anchor
 
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -114,6 +119,13 @@ async def lifespan(app: FastAPI):
     except FileNotFoundError as exc:
         logger.warning(f"Models not loaded: {exc}")
         _predictor = None
+
+    try:
+        _anchor = AnchorClient()
+        logger.info("Blockchain anchoring enabled (Sepolia).")
+    except RuntimeError as exc:
+        logger.warning(f"Blockchain anchoring disabled: {exc}")
+        _anchor = None
 
     yield
 
@@ -483,4 +495,113 @@ async def watch_wallet_stream(
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",  # disable nginx buffering
         },
+    )
+
+
+# ── On-chain anchoring ─────────────────────────────────────────────────────
+
+@app.post(
+    "/v1/anchor",
+    response_model=AnchorResponse,
+    tags=["anchoring"],
+    summary="Anchor a wallet score on Sepolia",
+    description=(
+        "Scores the wallet, computes a keccak256 commitment, and calls `anchorScore()` "
+        "on the ChainScoreAnchor contract deployed on Sepolia testnet. "
+        "Returns the Sepolia transaction hash and an Etherscan link. "
+        "The contract address and oracle key must be configured via `CONTRACT_ADDRESS` "
+        "and `DEPLOYER_PRIVATE_KEY` environment variables."
+    ),
+)
+async def anchor_score(
+    request: ScoreRequest,
+    _: str = Depends(_check_api_key),
+) -> AnchorResponse:
+    if _anchor is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Blockchain anchoring not configured. "
+                "Set CONTRACT_ADDRESS and DEPLOYER_PRIVATE_KEY in your environment."
+            ),
+        )
+
+    # Score first (uses cache if available)
+    scored = await asyncio.to_thread(_score_wallet_safe, request.wallet_address, False)
+    if scored.error or scored.score is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Could not score wallet: {scored.error}",
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            _anchor.anchor_score, request.wallet_address, scored.score
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Blockchain transaction failed: {exc}",
+        )
+
+    return AnchorResponse(
+        wallet_address=request.wallet_address,
+        score=scored.score,
+        **result,
+    )
+
+
+@app.get(
+    "/v1/verify/{address}",
+    response_model=VerifyResponse,
+    tags=["anchoring"],
+    summary="Verify a wallet's on-chain score record",
+    description=(
+        "Reads the ChainScoreAnchor contract on Sepolia and returns the stored commitment "
+        "for the given wallet. Does not require any write operation — pure read call. "
+        "Pass `score` and `valid_until` as query parameters to also verify the hash matches."
+    ),
+)
+async def verify_score(
+    address: str,
+    score: int | None = None,
+    valid_until: int | None = None,
+) -> VerifyResponse:
+    if _anchor is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Blockchain anchoring not configured.",
+        )
+
+    address = address.strip()
+    if not address.startswith("0x") or len(address) != 42:
+        raise HTTPException(status_code=400, detail="Invalid Ethereum address.")
+
+    try:
+        record_data = await asyncio.to_thread(_anchor.get_record, address)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Contract read failed: {exc}",
+        )
+
+    if record_data is None:
+        return VerifyResponse(wallet_address=address, anchored=False, is_valid=None, record=None)
+
+    record = OnChainRecord(**record_data)
+    is_valid: bool | None = None
+
+    if score is not None and valid_until is not None:
+        try:
+            is_valid = await asyncio.to_thread(
+                _anchor.verify, address, score, valid_until
+            )
+        except Exception:
+            is_valid = None
+
+    return VerifyResponse(
+        wallet_address=address,
+        anchored=True,
+        is_valid=is_valid,
+        record=record,
     )
