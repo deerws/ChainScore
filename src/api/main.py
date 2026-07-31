@@ -2,10 +2,12 @@
 ChainScore FastAPI service — serves real-time credit scores for Ethereum wallets.
 
 Endpoints:
-    GET  /health              — liveness check
-    POST /v1/score            — score a single wallet address
-    GET  /v1/score/{address}  — same via GET (for quick browser testing)
-    POST /v1/batch            — score up to 20 wallets in one request
+    GET  /health                          — liveness check
+    POST /v1/score                        — score a single wallet address
+    GET  /v1/score/{address}              — same via GET (for quick browser testing)
+    POST /v1/batch                        — score up to 20 wallets in one request
+    POST /v1/portfolio                    — aggregate risk for up to 100 wallets
+    GET  /v1/watch/{address}/stream       — SSE live score stream (60s polling)
 
 Authentication: API key via X-API-Key header (configured in .env).
 
@@ -24,7 +26,10 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 load_dotenv()
 
+import json
+
 from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.responses import StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -403,4 +408,79 @@ async def portfolio_analysis(
         concentration_high_risk=round(high_risk_count / len(scored), 4),
         tier_breakdown=tier_breakdown,
         model_version="lgbm_v1",
+    )
+
+
+# ── Real-time monitoring (SSE) ─────────────────────────────────────────────
+
+_WATCH_POLL_INTERVAL = 60  # seconds between re-scores
+
+
+@app.get(
+    "/v1/watch/{address}/stream",
+    tags=["monitoring"],
+    summary="Watch a wallet — live score stream (SSE)",
+    description=(
+        "Opens a **Server-Sent Events** stream for a wallet address. "
+        "Emits the current score immediately on connect, then re-scores every 60 s "
+        "and pushes an update event whenever the score or risk tier changes. "
+        "Connect with `EventSource` from the browser. "
+        "The stream sends a `ping` event every 30 s to keep the connection alive."
+    ),
+    response_class=StreamingResponse,
+)
+async def watch_wallet_stream(
+    address: str,
+    _: str = Depends(_check_api_key),
+) -> StreamingResponse:
+    address = address.strip()
+    if not address.startswith("0x") or len(address) != 42:
+        raise HTTPException(status_code=400, detail="Invalid Ethereum address.")
+
+    async def event_generator():
+        last_score: int | None = None
+        last_tier: str | None = None
+        ping_counter = 0
+
+        while True:
+            # Score the wallet (uses cache when available)
+            result = await asyncio.to_thread(_score_wallet_safe, address, False)
+
+            if result.error:
+                payload = json.dumps({"error": result.error, "wallet": address})
+                yield f"event: error\ndata: {payload}\n\n"
+            else:
+                score = result.score
+                tier = result.risk_tier
+                changed = (score != last_score) or (tier != last_tier)
+
+                event_data = json.dumps({
+                    "wallet": address,
+                    "score": score,
+                    "risk_tier": tier,
+                    "probability_of_default": result.probability_of_default,
+                    "changed": changed,
+                    "polled_at": datetime.utcnow().isoformat() + "Z",
+                })
+
+                event_type = "score_update" if changed else "score_unchanged"
+                yield f"event: {event_type}\ndata: {event_data}\n\n"
+
+                last_score = score
+                last_tier = tier
+
+            # Send ping every ~30s (half the poll interval) to keep connection alive
+            await asyncio.sleep(_WATCH_POLL_INTERVAL / 2)
+            ping_counter += 1
+            yield f"event: ping\ndata: {json.dumps({'seq': ping_counter})}\n\n"
+
+            await asyncio.sleep(_WATCH_POLL_INTERVAL / 2)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # disable nginx buffering
+        },
     )

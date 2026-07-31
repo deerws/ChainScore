@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -321,14 +321,54 @@ function StatusBadge({ type }: { type: BadgeType }) {
 // ── Page Component ─────────────────────────────────────────────────────────
 
 export default function Home() {
-  const [address, setAddress] = useState(MOCK_WALLET.address);
+  const [address, setAddress] = useState("");
   const [apiResult, setApiResult] = useState<ApiResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const score       = apiResult?.score                    ?? MOCK_WALLET.score;
-  const riskTier    = apiResult?.risk_tier                ?? MOCK_WALLET.riskTier;
-  const pd          = apiResult?.probability_of_default   ?? MOCK_WALLET.pdEstimate;
+  // Watch Live (SSE)
+  const [watching, setWatching] = useState(false);
+  const [watchScore, setWatchScore] = useState<number | null>(null);
+  const [watchTier, setWatchTier] = useState<string | null>(null);
+  const [watchPd, setWatchPd] = useState<number | null>(null);
+  const [watchLastUpdate, setWatchLastUpdate] = useState<string | null>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  function startWatch(addr: string) {
+    if (esRef.current) esRef.current.close();
+    const es = new EventSource(`${API_BASE}/v1/watch/${addr}/stream`);
+    esRef.current = es;
+    setWatching(true);
+
+    const handleScore = (e: MessageEvent) => {
+      const d = JSON.parse(e.data);
+      setWatchScore(d.score);
+      setWatchTier(d.risk_tier);
+      setWatchPd(d.probability_of_default);
+      setWatchLastUpdate(new Date(d.polled_at).toLocaleTimeString());
+    };
+    es.addEventListener("score_update", handleScore);
+    es.addEventListener("score_unchanged", handleScore);
+    es.onerror = () => { stopWatch(); };
+  }
+
+  function stopWatch() {
+    esRef.current?.close();
+    esRef.current = null;
+    setWatching(false);
+  }
+
+  // Stop stream when user changes wallet
+  useEffect(() => { stopWatch(); }, [apiResult]);
+
+  const hasResult = apiResult !== null;
+
+  // Use watch values when active, otherwise API result values
+  const liveScore = watching && watchScore !== null ? watchScore : null;
+
+  const score    = (watching && watchScore !== null ? watchScore  : apiResult?.score)     ?? MOCK_WALLET.score;
+  const riskTier = (watching && watchTier  !== null ? watchTier  : apiResult?.risk_tier) ?? MOCK_WALLET.riskTier;
+  const pd       = (watching && watchPd    !== null ? watchPd    : apiResult?.probability_of_default) ?? MOCK_WALLET.pdEstimate;
   const validDays   = apiResult?.score_valid_until
     ? Math.max(0, Math.round((new Date(apiResult.score_valid_until).getTime() - Date.now()) / 86_400_000))
     : MOCK_WALLET.scoreValidDays;
@@ -447,14 +487,65 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── EMPTY STATE ─────────────────────────────────────────────── */}
+        {!hasResult && !loading && (
+          <section className="mb-10">
+            <div
+              className="rounded border border-dashed py-16 text-center"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--foreground)' }}>
+                No wallet analyzed yet
+              </p>
+              <p className="text-xs mb-5" style={{ color: 'var(--muted)' }}>
+                Enter an Ethereum address above and click <strong>Analyze</strong> to generate a credit report.
+              </p>
+              <button
+                onClick={() => setAddress(MOCK_WALLET.address)}
+                className="text-xs transition-opacity hover:opacity-70"
+                style={{ color: 'var(--primary)' }}
+              >
+                Try with a demo address →
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ── RESULTS (shown only after a wallet is analyzed) ─────────── */}
+        {hasResult && <>
+
         {/* ── CREDIT SCORE SECTION (Two columns) ──────────────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* LEFT: Score Gauge */}
           <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>Credit Score</h2>
-              <StatusBadge type="live" />
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>Credit Score</h2>
+                {watching && (
+                  <span className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: 'var(--positive)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--positive)' }} />
+                    LIVE
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge type="live" />
+                <button
+                  onClick={() => watching ? stopWatch() : startWatch(apiResult!.wallet_address)}
+                  className="text-[10px] px-2 py-0.5 rounded border transition-colors font-semibold"
+                  style={watching
+                    ? { borderColor: 'var(--positive)', color: 'var(--positive)', background: 'rgba(22,101,52,0.08)' }
+                    : { borderColor: 'var(--border)', color: 'var(--muted)' }}
+                >
+                  {watching ? "Stop" : "Watch Live"}
+                </button>
+              </div>
             </div>
+            {watching && watchLastUpdate && (
+              <p className="text-[10px] text-center mb-2" style={{ color: 'var(--muted)' }}>
+                Last polled: {watchLastUpdate} · refreshes every 60s
+              </p>
+            )}
             <ScoreGauge score={score} />
             <div className="flex justify-center gap-4 mt-4 text-[10px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--negative)' }} /> High</span>
@@ -714,6 +805,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        </>} {/* end hasResult */}
 
         {/* ── FOOTER ──────────────────────────────────────────────────── */}
         <footer className="border-t pt-6 mt-10" style={{ borderColor: 'var(--border)' }}>
