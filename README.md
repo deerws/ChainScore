@@ -377,7 +377,7 @@ bool valid = anchor.verifyScore(wallet, score, validUntil, modelVersion);
 - [x] **Phase 5** — Deploy API to Render, frontend to Vercel; production-ready with environment variable management
 - [x] **Phase 5.1 — Methodological rigor** — Walk-forward CV (6 quarterly folds), out-of-time validation (2021–2022 → 2023), bootstrap CI on AUC, target variable analysis (Mann-Whitney U, abandoned-position heuristic, honest scope statement), README "Methodological scope" section
 - [x] **Phase 5.2 — Dashboard transparency** — Live / Sample Data / Beta / Roadmap status badges on every section, footer methodological disclaimer (DeFi liquidation risk ≠ traditional creditworthiness), status legend
-- [ ] **Phase 5.3 — Portfolio Builder** — Multi-wallet sidebar with custom weights, weighted average PD, VaR/CVaR aggregation, portfolio composition chart
+- [x] **Phase 5.3 — Portfolio Builder** — `/portfolio` page: dynamic wallet list, parallel calls to `/v1/portfolio` + `/v1/batch`, KPI cards (avg score, avg PD, VaR 95%, CVaR 95%), donut + bar charts, per-wallet score table
 - [ ] **Phase 5.4 — Real-time monitoring** — Alchemy Notify webhooks, SSE endpoint, "Watch Wallet" UI, health-factor alert stream
 - [ ] **Phase 5.5 — On-chain anchoring** — Deploy `ChainScoreAnchor.sol` to Sepolia, `/v1/anchor` endpoint, score verification flow
 
