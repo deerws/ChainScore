@@ -81,7 +81,7 @@ def main() -> None:
         "chainId":  w3.eth.chain_id,
     })
     signed = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
 
     print(f"\nDeployment tx:  https://sepolia.etherscan.io/tx/{tx_hash.hex()}")
     print("Waiting for confirmation…")

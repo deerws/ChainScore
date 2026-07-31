@@ -138,7 +138,7 @@ class AnchorClient:
         })
 
         signed = self.w3.eth.account.sign_transaction(tx, self._private_key)
-        tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
 
         return {
             "tx_hash":     tx_hash.hex(),
