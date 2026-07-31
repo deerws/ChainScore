@@ -223,7 +223,7 @@ export default function About() {
                 <Step
                   n={2}
                   title="Engineer Behavioral Features"
-                  description="45 features computed per wallet: ETH flows, DeFi protocol usage, Aave patterns, counterparty diversity, temporal activity. FICO-style behavioral signals."
+                  description="43 features computed per wallet: ETH flows, DeFi protocol usage, Aave patterns, counterparty diversity, temporal activity. FICO-style behavioral signals."
                 />
                 <Step
                   n={3}
@@ -239,7 +239,7 @@ export default function About() {
             </Section>
 
             {/* Features */}
-            <Section title="Feature Engineering - 45 Features">
+            <Section title="Feature Engineering — 43 Features">
               <div className="flex flex-col gap-3">
                 <FeatureFamily
                   name="Transaction Volume"
@@ -272,8 +272,9 @@ export default function About() {
             {/* Performance */}
             <Section title="Model Performance">
               <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Results on current 299-wallet MVP dataset (temporal split at
-                block 17,000,000). Full 15,809-wallet training in progress.
+                Results on 8,800-wallet dataset (5,402 defaulted, 3,398
+                non-default). Temporal split at block 17,000,000 (~April 2023).
+                Walk-forward cross-validated across 6 quarterly folds.
               </p>
               <div
                 className="rounded-lg border overflow-hidden"
@@ -303,14 +304,20 @@ export default function About() {
                     </tr>
                   </thead>
                   <tbody style={{ background: "var(--background)" }}>
-                    <MetricRow metric="ROC-AUC" lr="0.613" lgbm="0.588" />
-                    <MetricRow metric="KS Statistic" lr="0.300" lgbm="0.233" />
-                    <MetricRow metric="Gini" lr="0.227" lgbm="0.176" />
-                    <MetricRow metric="Brier Score" lr="0.264" lgbm="0.249" />
-                    <MetricRow metric="Lift @ D2" lr="1.33x" lgbm="1.17x" />
+                    <MetricRow metric="ROC-AUC"      lr="0.671" lgbm="0.654" />
+                    <MetricRow metric="KS Statistic" lr="0.328" lgbm="0.260" />
+                    <MetricRow metric="Gini"         lr="0.343" lgbm="0.308" />
+                    <MetricRow metric="Brier Score"  lr="0.253" lgbm="0.245" />
+                    <MetricRow metric="Lift @ D1"    lr="1.69×" lgbm="1.37×" />
                   </tbody>
                 </table>
               </div>
+              <p className="text-xs" style={{ color: "var(--muted)" }}>
+                Logistic Regression leads on rank-ordering metrics (AUC, KS,
+                Gini). LightGBM edges it on calibration (Brier score) —
+                consistent with credit risk literature. KS of 0.33 crosses the
+                threshold for scorecard-grade separation.
+              </p>
             </Section>
 
             {/* Risk Tiers */}
