@@ -57,7 +57,7 @@ CTOKEN_MARKETS = {
     "0x35A18000230DA775CAc24873d00Ff85BccdeD550": "cUNI",
     "0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4": "cCOMP",
     "0xFAce851a4921ce59e912d19329929CE6da6EB0c3": "cLINK",
-    "0x80a2AE356fc9ef4305b672f61D64cF9b6aca2B5": "cMKR",
+    "0x95b4eF2869eBD94BEb4eEE400a99824BF5DC325c": "cMKR",
     "0x041171993284df560249B57358F931D9eB7b925D": "cAAVE",
 }
 
@@ -144,7 +144,7 @@ def collect_compound_liquidations(
             current = chunk_end
             time.sleep(0.25)
 
-        logger.info(f"  {ctoken_name}: {sum(1 for r in all_records if r['debt_asset'] == Web3.to_checksum_address(ctoken_addr))} events so far")
+        logger.info(f"  {ctoken_name}: done — running total {len(all_records)} events")
 
     if not all_records:
         logger.warning("No Compound liquidations found.")
