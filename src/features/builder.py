@@ -410,7 +410,8 @@ def main() -> None:
     parser.add_argument(
         "--defaults",
         type=Path,
-        default=Path("data/raw/aave_v2_liquidations.parquet"),
+        default=Path("data/raw/default_labels.parquet"),
+        help="Cross-protocol default labels (use default_labels.parquet for Aave+Compound+MakerDAO)",
     )
     parser.add_argument(
         "--non-defaults",
