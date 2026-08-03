@@ -272,9 +272,9 @@ export default function About() {
             {/* Performance */}
             <Section title="Model Performance">
               <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Results on 8,800-wallet dataset (5,402 defaulted, 3,398
-                non-default). Temporal split at block 17,000,000 (~April 2023).
-                Walk-forward cross-validated across 6 quarterly folds.
+                Results on 12,341-wallet cross-protocol dataset (Aave V2 +
+                Compound V2 + MakerDAO). Temporal split at block 17,000,000
+                (~April 2023). Walk-forward cross-validated across 6 quarterly folds.
               </p>
               <div
                 className="rounded-lg border overflow-hidden"
@@ -304,19 +304,18 @@ export default function About() {
                     </tr>
                   </thead>
                   <tbody style={{ background: "var(--background)" }}>
-                    <MetricRow metric="ROC-AUC"      lr="0.671" lgbm="0.654" />
-                    <MetricRow metric="KS Statistic" lr="0.328" lgbm="0.260" />
-                    <MetricRow metric="Gini"         lr="0.343" lgbm="0.308" />
-                    <MetricRow metric="Brier Score"  lr="0.253" lgbm="0.245" />
-                    <MetricRow metric="Lift @ D1"    lr="1.69×" lgbm="1.37×" />
+                    <MetricRow metric="ROC-AUC"      lr="0.712" lgbm="0.764" />
+                    <MetricRow metric="KS Statistic" lr="0.360" lgbm="0.433" />
+                    <MetricRow metric="Gini"         lr="0.424" lgbm="0.527" />
+                    <MetricRow metric="Brier Score"  lr="0.230" lgbm="0.204" />
+                    <MetricRow metric="Lift @ D1"    lr="1.74×" lgbm="1.74×" />
                   </tbody>
                 </table>
               </div>
               <p className="text-xs" style={{ color: "var(--muted)" }}>
-                Logistic Regression leads on rank-ordering metrics (AUC, KS,
-                Gini). LightGBM edges it on calibration (Brier score) —
-                consistent with credit risk literature. KS of 0.33 crosses the
-                threshold for scorecard-grade separation.
+                LightGBM leads across all metrics after cross-protocol expansion
+                (Aave V2 + Compound V2 + MakerDAO). AUC 0.764 and Gini 0.527
+                place the model firmly in scorecard-grade territory.
               </p>
             </Section>
 

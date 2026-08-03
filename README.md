@@ -63,17 +63,17 @@ Institutional-style analyst interface built with Next.js — dark/light mode, li
 
 ## Model performance
 
-### Results — 8,800-wallet dataset
+### Results — 12,341-wallet cross-protocol dataset
 
 | Metric | Logistic Regression | LightGBM |
 |---|:---:|:---:|
-| **ROC-AUC** | **0.671** | 0.654 |
-| **KS Statistic** | **0.328** | 0.260 |
-| **Gini Coefficient** | **0.343** | 0.308 |
-| Brier Score | 0.253 | **0.245** |
-| Lift @ Decile 1 | **1.69×** | 1.37× |
+| ROC-AUC | 0.712 | **0.764** |
+| KS Statistic | 0.360 | **0.433** |
+| Gini Coefficient | 0.424 | **0.527** |
+| Brier Score | 0.230 | **0.204** |
+| Lift @ Decile 1 | 1.74× | **1.74×** |
 
-Logistic Regression continues to lead on rank-ordering metrics (AUC, KS, Gini), while LightGBM edges it on calibration (Brier score) — consistent with credit risk literature. A KS Statistic of 0.33 crosses the threshold for scorecard-grade separation without any hyperparameter tuning. Dataset: 8,800 wallets with transaction history (5,402 defaulted, 3,398 non-default), indexed from 15,809 labeled wallets.
+LightGBM now leads across all rank-ordering metrics after the cross-protocol expansion. AUC 0.764 and Gini 0.527 place the model firmly in scorecard-grade territory. Dataset: 12,341 wallets across Aave V2, Compound V2, and MakerDAO (76,932 liquidation events, 18,459 unique defaulters).
 
 ### Evaluation plots
 
@@ -108,7 +108,7 @@ The model captures **behavioral precursors** — over-leveraging patterns, low r
 
 - **Market-crash liquidations**: a wallet with 150% collateral may be liquidated during extreme volatility (e.g., ETH −40%) despite responsible borrowing. Behavioral features partially mitigate this, but the signal is not fully separable.
 - **Aave V2 only**: the model is calibrated on one protocol. Cross-protocol defaults (Compound, MakerDAO) are not yet included in the training labels.
-- **Not production-grade PD**: walk-forward validated AUC of ~0.67 demonstrates meaningful discriminatory power for relative ranking and pricing adjustments, but does not meet regulatory standards for PD models under Basel III.
+- **Not production-grade PD**: cross-protocol AUC of ~0.76 (LightGBM) demonstrates strong discriminatory power for relative ranking and pricing adjustments, but does not meet regulatory standards for PD models under Basel III.
 
 ### Validation methodology
 
@@ -157,7 +157,7 @@ The original single temporal split (block 17,000,000, n=205 test wallets) produc
 
 ### Data pipeline
 
-- **Default labels**: 49,748 `LiquidationCall` events from the Aave V2 LendingPool contract (blocks 11,500,000 – 25,000,000), yielding 10,809 unique liquidated borrowers.
+- **Default labels**: 76,932 liquidation events across three protocols — 49,748 `LiquidationCall` (Aave V2), 23,753 `LiquidateBorrow` (Compound V2), 3,431 `Bite`/`Bark` (MakerDAO) — yielding 18,459 unique liquidated borrowers.
 - **Non-default cohort**: Active borrowers with no liquidation history sampled from the same observation window.
 - **Train/test split**: Temporal cutoff at block 17,000,000 (~April 2023) to prevent data leakage. Wallets with first activity before the cutoff go into training; those after go into testing. This mirrors production deployment constraints.
 - **Walk-forward validation**: 6-fold quarterly walk-forward cross-validation (train on quarters 0..k, test on k+1) provides mean AUC ± std across time windows — more robust than a single split. See `notebooks/08_temporal_validation.ipynb`.
@@ -373,6 +373,7 @@ bool valid = anchor.verifyScore(wallet, score, validUntil, modelVersion);
 - [x] **Phase 3** — REST API (single + batch + portfolio scoring, Swagger, 30-min cache); Next.js institutional dashboard
 - [x] **Phase 3.5** — Backtesting suite: PR curve, decile hit rate analysis, CVaR/VaR portfolio metrics
 - [x] **Phase 4** — Scale to 8,800 wallets with transaction data and retrain — LR ROC-AUC 0.671, KS 0.328, Gini 0.343
+- [x] **Phase 4.6 — Cross-protocol expansion** — Compound V2 (23,753 events) + MakerDAO Bite/Bark (3,431 events); 76,932 total liquidations, 18,459 unique defaulters, 12,341 indexed wallets — LightGBM AUC 0.764, KS 0.433, Gini 0.527
 - [x] **Phase 4.5** — Stress testing (ETH crash, Aave exit, LUNA/FTX/USDC crisis replay); time series score evolution; benchmark vs. Aave market rates (DeFiLlama data)
 - [x] **Phase 5** — Deploy API to Render, frontend to Vercel; production-ready with environment variable management
 - [x] **Phase 5.1 — Methodological rigor** — Walk-forward CV (6 quarterly folds), out-of-time validation (2021–2022 → 2023), bootstrap CI on AUC, target variable analysis (Mann-Whitney U, abandoned-position heuristic, honest scope statement), README "Methodological scope" section
