@@ -19,6 +19,14 @@ interface ApiResult {
   score_valid_until: string;
 }
 
+interface PortfolioItem {
+  address: string;
+  score: number;
+  pd: number;
+  risk_tier: string;
+  weight: number;
+}
+
 import {
   LineChart,
   Line,
@@ -361,6 +369,122 @@ export default function Home() {
   // Stop stream when user changes wallet
   useEffect(() => { stopWatch(); }, [apiResult]);
 
+  // ── Portfolio sidebar ──────────────────────────────────────────────────
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  // Persist last result and portfolio across page navigation
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cs_last_result");
+      if (saved) {
+        const { addr, result } = JSON.parse(saved);
+        setAddress(addr);
+        setApiResult(result);
+      }
+      const savedPortfolio = localStorage.getItem("cs_portfolio");
+      if (savedPortfolio) {
+        const p = JSON.parse(savedPortfolio);
+        if (Array.isArray(p) && p.length > 0) { setPortfolio(p); setSidebarOpen(true); }
+      }
+    } catch {}
+
+    // Auto-analyze: triggered by Explore page OR by resuming an interrupted in-flight analysis
+    try {
+      const autoAddr = localStorage.getItem("cs_auto_analyze");
+      if (autoAddr && autoAddr.startsWith("0x") && autoAddr.length === 42) {
+        setAddress(autoAddr);
+        analyzeWallet(autoAddr); // pass directly — bypasses stale address state
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (apiResult) localStorage.setItem("cs_last_result", JSON.stringify({ addr: address, result: apiResult }));
+  }, [apiResult]);
+
+  useEffect(() => {
+    localStorage.setItem("cs_portfolio", JSON.stringify(portfolio));
+  }, [portfolio]);
+
+  function normalizeWeights(items: PortfolioItem[]): PortfolioItem[] {
+    if (items.length === 0) return items;
+    const total = items.reduce((s, p) => s + p.weight, 0);
+    if (total === 0) return items.map(p => ({ ...p, weight: 100 / items.length }));
+    return items.map(p => ({ ...p, weight: parseFloat(((p.weight / total) * 100).toFixed(1)) }));
+  }
+
+  function addToPortfolio() {
+    if (!apiResult) return;
+    const addr = apiResult.wallet_address;
+    if (portfolio.some(p => p.address.toLowerCase() === addr.toLowerCase())) {
+      setSidebarOpen(true); return;
+    }
+    const newItem: PortfolioItem = {
+      address: addr, score, pd, risk_tier: riskTier, weight: 100,
+    };
+    setPortfolio(prev => normalizeWeights([...prev, newItem]));
+    setSidebarOpen(true);
+  }
+
+  function removeFromPortfolio(addr: string) {
+    setPortfolio(prev => normalizeWeights(prev.filter(p => p.address !== addr)));
+  }
+
+  function setRawWeight(addr: string, val: number) {
+    setPortfolio(prev => prev.map(p => p.address === addr ? { ...p, weight: Math.max(0, val) } : p));
+  }
+
+  function applyNormalize() {
+    setPortfolio(prev => normalizeWeights(prev));
+  }
+
+  async function exportPdf() {
+    if (portfolio.length === 0 || exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/report/portfolio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallets: portfolio.map(p => ({
+            address: p.address,
+            score: p.score,
+            pd: p.pd,
+            risk_tier: p.risk_tier,
+            weight: p.weight,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail ?? res.statusText);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "chainscore_portfolio.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert(`PDF export failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  const weightedScore = portfolio.length > 0
+    ? Math.round(portfolio.reduce((s, p) => s + p.score * p.weight / 100, 0)) : null;
+  const weightedPd = portfolio.length > 0
+    ? portfolio.reduce((s, p) => s + p.pd * p.weight / 100, 0) : null;
+  const totalWeight = parseFloat(portfolio.reduce((s, p) => s + p.weight, 0).toFixed(1));
+  const isInPortfolio = apiResult
+    ? portfolio.some(p => p.address.toLowerCase() === apiResult.wallet_address.toLowerCase())
+    : false;
+
   // Anchor state
   const [anchoring, setAnchoring] = useState(false);
   const [anchorResult, setAnchorResult] = useState<{
@@ -411,12 +535,14 @@ export default function Home() {
       }))
     : SHAP_FACTORS;
 
-  async function analyzeWallet() {
-    const addr = address.trim();
+  async function analyzeWallet(overrideAddr?: string) {
+    const addr = (overrideAddr ?? address).trim();
     if (!addr.startsWith("0x") || addr.length !== 42) {
       setApiError("Enter a valid Ethereum address (42-char hex starting with 0x).");
       return;
     }
+    // Mark the address as in-flight so we can resume if the user navigates away mid-analysis
+    localStorage.setItem("cs_auto_analyze", addr);
     setLoading(true);
     setApiError(null);
     setApiResult(null);
@@ -432,15 +558,124 @@ export default function Home() {
       }
       const data: ApiResult = await res.json();
       setApiResult(data);
+      localStorage.removeItem("cs_auto_analyze"); // clear only on success
     } catch (e: unknown) {
       setApiError(e instanceof Error ? e.message : "Failed to reach API.");
+      localStorage.removeItem("cs_auto_analyze"); // clear on error too
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen flex" style={{ background: 'var(--background)' }}>
+
+    {/* ── PORTFOLIO SIDEBAR ──────────────────────────────────────────────── */}
+    {sidebarOpen && (
+      <aside
+        className="hidden lg:flex flex-col w-72 shrink-0 border-l sticky top-0 h-screen overflow-y-auto"
+        style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+      >
+        <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Portfolio</p>
+          <button onClick={() => setSidebarOpen(false)} className="text-xs hover:opacity-70" style={{ color: 'var(--muted)' }}>✕</button>
+        </div>
+
+        {portfolio.length === 0 ? (
+          <p className="text-xs p-4" style={{ color: 'var(--muted)' }}>
+            Analyze a wallet and click "Add to Portfolio" to build your portfolio.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-0 flex-1">
+            {portfolio.map((item) => (
+              <div key={item.address} className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-mono" style={{ color: 'var(--foreground)' }}>
+                    {item.address.slice(0,6)}…{item.address.slice(-4)}
+                  </span>
+                  <button onClick={() => removeFromPortfolio(item.address)} className="text-[10px] hover:opacity-70" style={{ color: 'var(--muted)' }}>✕</button>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>{item.score}</span>
+                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded" style={{
+                    color: item.risk_tier === 'very_low' || item.risk_tier === 'low' ? 'var(--positive)' : item.risk_tier === 'medium' ? 'var(--warning)' : 'var(--negative)',
+                    background: item.risk_tier === 'very_low' || item.risk_tier === 'low' ? 'rgba(22,101,52,0.12)' : item.risk_tier === 'medium' ? 'rgba(217,119,6,0.12)' : 'rgba(185,28,28,0.12)',
+                  }}>
+                    {item.risk_tier.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] uppercase tracking-wider shrink-0" style={{ color: 'var(--muted)' }}>Weight %</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={parseFloat(item.weight.toFixed(1))}
+                    onChange={e => setRawWeight(item.address, parseFloat(e.target.value) || 0)}
+                    onBlur={applyNormalize}
+                    className="w-full px-2 py-1 text-xs font-mono rounded border focus:outline-none"
+                    style={{ background: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {/* Weight total indicator */}
+            <div className="px-4 py-2 flex items-center justify-between text-[10px]" style={{ color: Math.abs(totalWeight - 100) < 0.2 ? 'var(--positive)' : 'var(--warning)' }}>
+              <span>Total weight</span>
+              <span className="font-mono font-semibold">{totalWeight.toFixed(1)}%</span>
+            </div>
+            <button
+              onClick={applyNormalize}
+              className="mx-4 mb-2 py-1 text-[10px] rounded border hover:opacity-70 transition-opacity"
+              style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            >
+              Normalize to 100%
+            </button>
+
+            {/* Weighted aggregate */}
+            {weightedScore !== null && (
+              <div className="mx-4 mb-3 p-3 rounded border" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
+                <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Weighted Portfolio</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--muted)' }}>Avg Score</span>
+                    <span className="font-mono font-semibold" style={{ color: 'var(--foreground)' }}>{weightedScore}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--muted)' }}>Weighted PD</span>
+                    <span className="font-mono font-semibold" style={{ color: 'var(--foreground)' }}>{((weightedPd ?? 0) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--muted)' }}>Wallets</span>
+                    <span className="font-mono" style={{ color: 'var(--muted)' }}>{portfolio.length}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Export PDF */}
+            <button
+              onClick={exportPdf}
+              disabled={exportingPdf || portfolio.length === 0}
+              className="mx-4 mb-4 py-2 text-xs rounded font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 flex items-center justify-center gap-1.5"
+              style={{ background: 'var(--primary)', color: '#fff' }}
+            >
+              {exportingPdf ? (
+                <>
+                  <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  Compiling PDF…
+                </>
+              ) : (
+                "Export PDF Report"
+              )}
+            </button>
+          </div>
+        )}
+      </aside>
+    )}
+
+    <main className="flex-1 min-w-0" style={{ background: 'var(--background)' }}>
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         
         {/* ── HERO / REPORT TITLE ─────────────────────────────────────── */}
@@ -470,7 +705,7 @@ export default function Home() {
                   }}
                 />
                 <button
-                  onClick={analyzeWallet}
+                  onClick={() => analyzeWallet()}
                   disabled={loading}
                   className="px-5 py-2.5 text-sm font-medium rounded hover:opacity-90 transition-opacity disabled:opacity-50"
                   style={{ background: 'var(--primary)', color: '#fff' }}
@@ -503,10 +738,21 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Hero Illustration */}
-            <div className="hidden lg:flex items-center justify-center w-56 xl:w-72 shrink-0">
-              <img 
-                src="/hero-bull.png" 
+            {/* Hero Illustration + Portfolio toggle */}
+            <div className="hidden lg:flex flex-col items-end gap-3 w-56 xl:w-72 shrink-0">
+              {portfolio.length > 0 && (
+                <button
+                  onClick={() => setSidebarOpen(o => !o)}
+                  className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded border font-semibold transition-colors"
+                  style={{ borderColor: 'var(--primary)', color: 'var(--primary)', background: 'rgba(37,99,235,0.08)' }}
+                >
+                  <span>Portfolio</span>
+                  <span className="w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold" style={{ background: 'var(--primary)', color: '#fff' }}>{portfolio.length}</span>
+                  {sidebarOpen ? "→" : "←"}
+                </button>
+              )}
+              <img
+                src="/hero-bull.png"
                 alt="ChainScore Bull - Wall Street meets Blockchain"
                 className="w-full h-auto hero-bull"
               />
@@ -565,6 +811,15 @@ export default function Home() {
                     : { borderColor: 'var(--border)', color: 'var(--muted)' }}
                 >
                   {watching ? "Stop" : "Watch Live"}
+                </button>
+                <button
+                  onClick={isInPortfolio ? () => setSidebarOpen(true) : addToPortfolio}
+                  className="text-[10px] px-2 py-0.5 rounded border transition-colors font-semibold"
+                  style={isInPortfolio
+                    ? { borderColor: 'var(--primary)', color: 'var(--primary)', background: 'rgba(37,99,235,0.08)' }
+                    : { borderColor: 'var(--border)', color: 'var(--muted)' }}
+                >
+                  {isInPortfolio ? "In Portfolio ✓" : "+ Portfolio"}
                 </button>
               </div>
             </div>
@@ -965,5 +1220,6 @@ export default function Home() {
         </footer>
       </div>
     </main>
+    </div>
   );
 }

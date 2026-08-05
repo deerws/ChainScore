@@ -33,6 +33,8 @@ from fastapi.responses import StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.responses import Response
+
 from src.api.schemas import (
     AnchorResponse,
     BatchScoreRequest,
@@ -40,6 +42,7 @@ from src.api.schemas import (
     BatchWalletResult,
     HealthResponse,
     OnChainRecord,
+    PortfolioReportRequest,
     PortfolioRequest,
     PortfolioStats,
     ScoreRequest,
@@ -604,4 +607,56 @@ async def verify_score(
         anchored=True,
         is_valid=is_valid,
         record=record,
+    )
+
+
+# ── Trending wallets ───────────────────────────────────────────────────────
+
+@app.get(
+    "/v1/trending/wallets",
+    tags=["trending"],
+    summary="Top wallets by recent DeFi activity",
+    description=(
+        "Returns up to 12 wallets with the highest recent transaction count across "
+        "Aave V2, Compound V2, and Uniswap V3. Results are cached for 5 minutes. "
+        "No API key required."
+    ),
+)
+async def trending_wallets() -> dict:
+    from src.api.trending import fetch_trending
+    return await asyncio.to_thread(fetch_trending)
+
+
+# ── Portfolio PDF report ───────────────────────────────────────────────────
+
+@app.post(
+    "/v1/report/portfolio",
+    tags=["reporting"],
+    summary="Generate a LaTeX PDF report for a portfolio",
+    description=(
+        "Compiles a professional PDF credit report for the given portfolio of wallets. "
+        "Each wallet entry must include its pre-scored fields (score, pd, risk_tier, weight). "
+        "Returns the PDF binary with `Content-Disposition: attachment`. "
+        "Requires `pdflatex` (texlive) to be installed on the server."
+    ),
+    response_class=Response,
+)
+async def generate_portfolio_report(
+    request: PortfolioReportRequest,
+    _: str = Depends(_check_api_key),
+) -> Response:
+    from src.api.report import generate_portfolio_pdf
+
+    wallets = [w.model_dump() for w in request.wallets]
+    try:
+        pdf_bytes = await asyncio.to_thread(generate_portfolio_pdf, wallets)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="chainscore_portfolio.pdf"'},
     )

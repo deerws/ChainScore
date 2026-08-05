@@ -188,6 +188,28 @@ class VerifyResponse(BaseModel):
     record: OnChainRecord | None = Field(default=None)
 
 
+# ── Portfolio PDF report ───────────────────────────────────────────────────
+
+class PortfolioWallet(BaseModel):
+    address: str = Field(description="Ethereum wallet address")
+    score: int = Field(..., ge=0, le=1000)
+    pd: float = Field(..., ge=0.0, le=1.0, description="Probability of default [0, 1]")
+    risk_tier: Literal["very_low", "low", "medium", "high", "very_high"]
+    weight: float = Field(..., ge=0.0, description="Portfolio weight as a percentage")
+
+    @field_validator("address")
+    @classmethod
+    def validate_address(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith("0x") or len(v) != 42:
+            raise ValueError("address must be a 42-character hex string starting with 0x")
+        return v
+
+
+class PortfolioReportRequest(BaseModel):
+    wallets: list[PortfolioWallet] = Field(..., min_length=1, max_length=50)
+
+
 # ── System ─────────────────────────────────────────────────────────────────
 
 class HealthResponse(BaseModel):
