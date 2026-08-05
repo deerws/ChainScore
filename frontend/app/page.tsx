@@ -373,8 +373,10 @@ export default function Home() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  // hydrated prevents save-effects from clobbering localStorage before restore runs
+  const [hydrated, setHydrated] = useState(false);
 
-  // Persist last result and portfolio across page navigation
+  // Restore state from localStorage on mount (runs once)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("cs_last_result");
@@ -390,23 +392,29 @@ export default function Home() {
       }
     } catch {}
 
-    // Auto-analyze: triggered by Explore page OR by resuming an interrupted in-flight analysis
+    // Auto-analyze: from Explore page OR resuming an interrupted analysis
     try {
       const autoAddr = localStorage.getItem("cs_auto_analyze");
       if (autoAddr && autoAddr.startsWith("0x") && autoAddr.length === 42) {
         setAddress(autoAddr);
-        analyzeWallet(autoAddr); // pass directly — bypasses stale address state
+        analyzeWallet(autoAddr);
       }
     } catch {}
+
+    setHydrated(true); // only allow saves after restore is done
   }, []);
 
+  // Save last result — only after hydration so we don't clobber restored state
   useEffect(() => {
+    if (!hydrated) return;
     if (apiResult) localStorage.setItem("cs_last_result", JSON.stringify({ addr: address, result: apiResult }));
-  }, [apiResult]);
+  }, [apiResult, hydrated]);
 
+  // Save portfolio — only after hydration
   useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem("cs_portfolio", JSON.stringify(portfolio));
-  }, [portfolio]);
+  }, [portfolio, hydrated]);
 
   function normalizeWeights(items: PortfolioItem[]): PortfolioItem[] {
     if (items.length === 0) return items;
@@ -570,10 +578,10 @@ export default function Home() {
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--background)' }}>
 
-    {/* ── PORTFOLIO SIDEBAR ──────────────────────────────────────────────── */}
+    {/* ── PORTFOLIO SIDEBAR (right side via lg:order-2) ─────────────────── */}
     {sidebarOpen && (
       <aside
-        className="hidden lg:flex flex-col w-72 shrink-0 border-l sticky top-0 h-screen overflow-y-auto"
+        className="hidden lg:flex lg:order-2 flex-col w-72 shrink-0 border-l sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto"
         style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
       >
         <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
@@ -675,7 +683,7 @@ export default function Home() {
       </aside>
     )}
 
-    <main className="flex-1 min-w-0" style={{ background: 'var(--background)' }}>
+    <main className="flex-1 min-w-0 lg:order-1" style={{ background: 'var(--background)' }}>
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         
         {/* ── HERO / REPORT TITLE ─────────────────────────────────────── */}

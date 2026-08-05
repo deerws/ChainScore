@@ -8,14 +8,16 @@ export const metadata: Metadata = {
 };
 
 function Section({
+  id,
   title,
   children,
 }: {
+  id?: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4">
+    <section id={id} className="flex flex-col gap-4 scroll-mt-20">
       <h2
         className="text-sm font-semibold uppercase tracking-wider"
         style={{ color: "var(--foreground)" }}
@@ -134,9 +136,9 @@ export default function About() {
   return (
     <main className="flex flex-col flex-1">
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1100px] mx-auto w-full">
-        {/* Left Panel - Table of Contents */}
+        {/* Left Panel - Table of Contents (sticky) */}
         <div
-          className="lg:w-52 shrink-0 p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4"
+          className="lg:w-52 shrink-0 p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4 lg:sticky lg:top-14 lg:self-start lg:max-h-[calc(100vh-3.5rem)] lg:overflow-y-auto"
           style={{ borderColor: "var(--border)" }}
         >
           <div
@@ -147,20 +149,20 @@ export default function About() {
           </div>
           <nav className="flex flex-col gap-1">
             {[
-              "Overview",
-              "Pipeline",
-              "Features",
-              "Performance",
-              "Risk Tiers",
-              "Tech Stack",
-            ].map((item) => (
+              { label: "Overview",   anchor: "overview"   },
+              { label: "Pipeline",   anchor: "pipeline"   },
+              { label: "Features",   anchor: "features"   },
+              { label: "Performance",anchor: "performance" },
+              { label: "Risk Tiers", anchor: "risk-tiers" },
+              { label: "Tech Stack", anchor: "tech-stack" },
+            ].map(({ label, anchor }) => (
               <a
-                key={item}
-                href={`#${item.toLowerCase().replace(" ", "-")}`}
+                key={anchor}
+                href={`#${anchor}`}
                 className="text-sm py-1.5 transition-colors hover:text-[var(--foreground)]"
                 style={{ color: "var(--muted)" }}
               >
-                {item}
+                {label}
               </a>
             ))}
           </nav>
@@ -213,7 +215,7 @@ export default function About() {
             </div>
 
             {/* Pipeline */}
-            <Section title="Pipeline">
+            <Section id="pipeline" title="Pipeline">
               <div className="flex flex-col gap-4">
                 <Step
                   n={1}
@@ -239,7 +241,7 @@ export default function About() {
             </Section>
 
             {/* Features */}
-            <Section title="Feature Engineering — 43 Features">
+            <Section id="features" title="Feature Engineering — 43 Features">
               <div className="flex flex-col gap-3">
                 <FeatureFamily
                   name="Transaction Volume"
@@ -270,7 +272,7 @@ export default function About() {
             </Section>
 
             {/* Performance */}
-            <Section title="Model Performance">
+            <Section id="performance" title="Model Performance">
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 Results on 12,341-wallet cross-protocol dataset (Aave V2 +
                 Compound V2 + MakerDAO). Temporal split at block 17,000,000
@@ -320,7 +322,7 @@ export default function About() {
             </Section>
 
             {/* Risk Tiers */}
-            <Section title="Risk Tiers">
+            <Section id="risk-tiers" title="Risk Tiers">
               <div
                 className="rounded-lg border overflow-hidden"
                 style={{ borderColor: "var(--border)" }}
@@ -384,7 +386,7 @@ export default function About() {
             </Section>
 
             {/* Tech Stack */}
-            <Section title="Tech Stack">
+            <Section id="tech-stack" title="Tech Stack">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { layer: "Data", tools: "Python, Etherscan API, Alchemy RPC, Pandas" },
