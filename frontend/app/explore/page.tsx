@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import PortfolioSidebar from "../components/PortfolioSidebar";
+import { usePortfolio } from "../providers/PortfolioProvider";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -113,6 +115,7 @@ function AddrShort({ addr }: { addr: string }) {
 export default function ExplorePage() {
   const [tab, setTab] = useState<"famous" | "trending">("famous");
   const router = useRouter();
+  const { portfolio, sidebarOpen, setSidebarOpen } = usePortfolio();
 
   function handleAnalyze(address: string) {
     localStorage.setItem("cs_auto_analyze", address);
@@ -120,55 +123,83 @@ export default function ExplorePage() {
   }
 
   return (
-    <main className="flex-1">
-      <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="min-h-screen flex" style={{ background: "var(--background)" }}>
+      {/* Portfolio sidebar — right side via lg:order-2 inside PortfolioSidebar */}
+      <PortfolioSidebar />
 
-        {/* Page header */}
-        <div className="mb-7">
-          <h1 className="text-3xl font-bold mb-1" style={{ color: "var(--foreground)" }}>
-            Explore Wallets
-          </h1>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
-            Browse famous wallets or see who is most active on DeFi protocols right now.
-            Click <strong style={{ color: "var(--foreground)" }}>Analyze →</strong> to score any wallet.
+      <main className="flex-1 min-w-0 lg:order-1">
+        <div className="max-w-[1200px] mx-auto px-6 py-10">
+
+          {/* Page header */}
+          <div className="mb-7 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-1" style={{ color: "var(--foreground)" }}>
+                Explore Wallets
+              </h1>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                Browse famous wallets or see who is most active on DeFi protocols right now.
+                Click <strong style={{ color: "var(--foreground)" }}>Analyze →</strong> to score any wallet.
+              </p>
+            </div>
+            {/* Portfolio toggle */}
+            {portfolio.length > 0 && (
+              <button
+                onClick={() => setSidebarOpen((o) => !o)}
+                className="hidden lg:flex items-center gap-1.5 shrink-0 text-[11px] px-3 py-1.5 rounded border font-semibold transition-colors"
+                style={{
+                  borderColor: "var(--primary)",
+                  color: "var(--primary)",
+                  background: "rgba(37,99,235,0.08)",
+                }}
+              >
+                <span>Portfolio</span>
+                <span
+                  className="w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold"
+                  style={{ background: "var(--primary)", color: "#fff" }}
+                >
+                  {portfolio.length}
+                </span>
+                {sidebarOpen ? "→" : "←"}
+              </button>
+            )}
+          </div>
+
+          {/* Tab switcher */}
+          <div className="flex gap-1 mb-8 border-b" style={{ borderColor: "var(--border)" }}>
+            {(["famous", "trending"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="px-4 py-2 text-sm font-medium transition-colors relative"
+                style={{
+                  color: tab === t ? "var(--foreground)" : "var(--muted)",
+                  borderBottom: tab === t ? "2px solid var(--primary)" : "2px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
+                {t === "famous" ? "Famous Wallets" : (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#16A34A" }} />
+                    Trending Now
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {tab === "famous" ? (
+            <FamousTab onAnalyze={handleAnalyze} />
+          ) : (
+            <TrendingTab onAnalyze={handleAnalyze} />
+          )}
+
+          <p className="text-[11px] mt-10 text-center" style={{ color: "var(--muted)" }}>
+            Addresses from publicly available blockchain data and community-verified sources.
+            ChainScore makes no ownership attribution.
           </p>
         </div>
-
-        {/* Tab switcher */}
-        <div className="flex gap-1 mb-8 border-b" style={{ borderColor: "var(--border)" }}>
-          {(["famous", "trending"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="px-4 py-2 text-sm font-medium transition-colors relative"
-              style={{
-                color: tab === t ? "var(--foreground)" : "var(--muted)",
-                borderBottom: tab === t ? "2px solid var(--primary)" : "2px solid transparent",
-                marginBottom: -1,
-              }}
-            >
-              {t === "famous" ? "Famous Wallets" : (
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#16A34A" }} />
-                  Trending Now
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {tab === "famous" ? (
-          <FamousTab onAnalyze={handleAnalyze} />
-        ) : (
-          <TrendingTab onAnalyze={handleAnalyze} />
-        )}
-
-        <p className="text-[11px] mt-10 text-center" style={{ color: "var(--muted)" }}>
-          Addresses from publicly available blockchain data and community-verified sources.
-          ChainScore makes no ownership attribution.
-        </p>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
@@ -287,6 +318,7 @@ function FamousTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
 function TrendingTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
   const [data, setData] = useState<TrendingData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -294,11 +326,15 @@ function TrendingTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/v1/trending/wallets`);
+      if (!res.ok) throw new Error(`API returned HTTP ${res.status}`);
       const json: TrendingData = await res.json();
       setData(json);
+      setFetchError(null);
       setCountdown(REFRESH_INTERVAL);
-    } catch {
-      // keep old data if fetch fails
+    } catch (e) {
+      setFetchError(
+        e instanceof Error ? e.message : "Could not reach API. Is the server running?"
+      );
     } finally {
       setLoading(false);
     }
@@ -354,7 +390,22 @@ function TrendingTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Network/API error */}
+      {fetchError && !data && (
+        <div className="border rounded p-6 text-center" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--negative)" }}>Failed to load trending data</p>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>{fetchError}</p>
+          <button
+            onClick={load}
+            className="mt-3 text-xs transition-opacity hover:opacity-70"
+            style={{ color: "var(--primary)" }}
+          >
+            ↻ Retry
+          </button>
+        </div>
+      )}
+
+      {/* Etherscan config error */}
       {data?.error && (
         <div className="border rounded p-6 text-center" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
           <p className="text-sm" style={{ color: "var(--negative)" }}>{data.error}</p>
@@ -363,7 +414,7 @@ function TrendingTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
       )}
 
       {/* Loading skeleton */}
-      {!data && loading && (
+      {!data && !fetchError && loading && (
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="border rounded p-4 animate-pulse" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
