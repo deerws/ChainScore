@@ -21,7 +21,8 @@ MONITORED_PROTOCOLS: dict[str, str] = {
     "Uniswap V3": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
 }
 
-ETHERSCAN_BASE = "https://api.etherscan.io/api"
+ETHERSCAN_BASE = "https://api.etherscan.io/v2/api"
+ETHERSCAN_CHAIN_ID = 1  # Ethereum mainnet
 CACHE_TTL = 300  # 5 minutes — keeps us well within free-tier limits
 
 
@@ -29,26 +30,35 @@ _cache_result: dict | None = None
 _cache_ts: float = 0.0
 
 
-def _etherscan_tokentx(apikey: str, address: str, offset: int = 200) -> list[dict]:
+def _etherscan_txlist(apikey: str, address: str, offset: int = 500) -> list[dict]:
+    """Fetch recent normal transactions for a contract address.
+
+    Using txlist instead of tokentx: for DeFi protocols the `from` field in
+    normal transactions is the user wallet that called the contract, which is
+    exactly who we want to track. tokentx returns ERC-20 transfer events where
+    the `from` is usually the protocol contract itself (minting aTokens, etc.),
+    so it yields 0 unique user wallets.
+    """
     try:
         resp = requests.get(
             ETHERSCAN_BASE,
             params={
+                "chainid": ETHERSCAN_CHAIN_ID,
                 "module": "account",
-                "action": "tokentx",
+                "action": "txlist",
                 "address": address,
                 "page": 1,
                 "offset": offset,
                 "sort": "desc",
                 "apikey": apikey,
             },
-            timeout=10,
+            timeout=15,
         )
         data = resp.json()
         if data.get("status") == "1":
             return data.get("result", [])
     except Exception as exc:
-        logger.warning("Etherscan tokentx failed for %s: %s", address, exc)
+        logger.warning("Etherscan txlist failed for %s: %s", address, exc)
     return []
 
 
@@ -84,13 +94,20 @@ def fetch_trending(n: int = 12) -> dict:
 
     for protocol, contract_addr in MONITORED_PROTOCOLS.items():
         contract_lower = contract_addr.lower()
-        txs = _etherscan_tokentx(apikey, contract_addr)
+        txs = _etherscan_txlist(apikey, contract_addr)
 
         for tx in txs:
+            # Only count inbound calls: user → protocol (to == protocol address)
+            if tx.get("to", "").lower() != contract_lower:
+                continue
+            # Skip failed transactions
+            if tx.get("isError") == "1":
+                continue
+
             sender = tx.get("from", "").lower()
-            # Skip the contract itself and zero/invalid addresses
             if not sender or sender == contract_lower or len(sender) != 42:
                 continue
+
             if sender not in wallet_data:
                 wallet_data[sender] = {
                     "address": sender,
