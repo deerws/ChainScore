@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Nav from "./components/Nav";
 import { PortfolioProvider } from "./providers/PortfolioProvider";
+import PortfolioSidebar from "./components/PortfolioSidebar";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -46,8 +47,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen flex flex-col antialiased font-sans" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
-        <Nav />
         <PortfolioProvider>
+          <Nav />
+          <PortfolioSidebar />
           {children}
         </PortfolioProvider>
       </body>

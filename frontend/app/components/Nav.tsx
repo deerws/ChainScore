@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { usePortfolio } from "../providers/PortfolioProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/" },
@@ -57,6 +58,7 @@ function ThemeToggle() {
 
 export default function Nav() {
   const pathname = usePathname();
+  const { portfolio, sidebarOpen, setSidebarOpen } = usePortfolio();
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)]" style={{ background: 'var(--background)' }}>
@@ -91,7 +93,7 @@ export default function Nav() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <a
               href="https://github.com/deerws/ChainScore"
               target="_blank"
@@ -101,6 +103,31 @@ export default function Nav() {
             >
               GitHub ↗
             </a>
+            {/* Portfolio toggle — always visible, badge shows count */}
+            <button
+              onClick={() => setSidebarOpen((o) => !o)}
+              className="relative flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium rounded border transition-colors"
+              style={{
+                borderColor: sidebarOpen ? 'var(--primary)' : 'var(--border)',
+                color: sidebarOpen ? 'var(--primary)' : 'var(--muted)',
+                background: sidebarOpen ? 'rgba(37,99,235,0.08)' : 'transparent',
+              }}
+              aria-label="Toggle portfolio panel"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2"/>
+                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+              </svg>
+              <span className="hidden sm:inline">Portfolio</span>
+              {portfolio.length > 0 && (
+                <span
+                  className="flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold"
+                  style={{ background: 'var(--primary)', color: '#fff' }}
+                >
+                  {portfolio.length}
+                </span>
+              )}
+            </button>
             <ThemeToggle />
           </div>
         </div>

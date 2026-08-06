@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import PortfolioSidebar from "../components/PortfolioSidebar";
 import { usePortfolio } from "../providers/PortfolioProvider";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -115,7 +114,7 @@ function AddrShort({ addr }: { addr: string }) {
 export default function ExplorePage() {
   const [tab, setTab] = useState<"famous" | "trending">("famous");
   const router = useRouter();
-  const { portfolio, sidebarOpen, setSidebarOpen } = usePortfolio();
+  usePortfolio(); // keep context alive on this page
 
   function handleAnalyze(address: string) {
     localStorage.setItem("cs_auto_analyze", address);
@@ -123,45 +122,18 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--background)" }}>
-      {/* Portfolio sidebar — right side via lg:order-2 inside PortfolioSidebar */}
-      <PortfolioSidebar />
-
-      <main className="flex-1 min-w-0 lg:order-1">
-        <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <main>
+      <div className="max-w-[1200px] mx-auto px-6 py-10">
 
           {/* Page header */}
-          <div className="mb-7 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-1" style={{ color: "var(--foreground)" }}>
-                Explore Wallets
-              </h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Browse famous wallets or see who is most active on DeFi protocols right now.
-                Click <strong style={{ color: "var(--foreground)" }}>Analyze →</strong> to score any wallet.
-              </p>
-            </div>
-            {/* Portfolio toggle */}
-            {portfolio.length > 0 && (
-              <button
-                onClick={() => setSidebarOpen((o) => !o)}
-                className="hidden lg:flex items-center gap-1.5 shrink-0 text-[11px] px-3 py-1.5 rounded border font-semibold transition-colors"
-                style={{
-                  borderColor: "var(--primary)",
-                  color: "var(--primary)",
-                  background: "rgba(37,99,235,0.08)",
-                }}
-              >
-                <span>Portfolio</span>
-                <span
-                  className="w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold"
-                  style={{ background: "var(--primary)", color: "#fff" }}
-                >
-                  {portfolio.length}
-                </span>
-                {sidebarOpen ? "→" : "←"}
-              </button>
-            )}
+          <div className="mb-7">
+            <h1 className="text-3xl font-bold mb-1" style={{ color: "var(--foreground)" }}>
+              Explore Wallets
+            </h1>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              Browse famous wallets or see who is most active on DeFi protocols right now.
+              Click <strong style={{ color: "var(--foreground)" }}>Analyze →</strong> to score any wallet.
+            </p>
           </div>
 
           {/* Tab switcher */}
@@ -198,8 +170,7 @@ export default function ExplorePage() {
             ChainScore makes no ownership attribution.
           </p>
         </div>
-      </main>
-    </div>
+    </main>
   );
 }
 

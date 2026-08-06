@@ -1,0 +1,70 @@
+2026-08-01 17:36:15,850 [INFO] Total wallets to index: 15,809
+2026-08-01 17:36:15,853 [INFO] Resuming: 15458 wallets already indexed
+2026-08-01 17:36:15,854 [INFO] [15459/15809] Indexing 0x510a93AA831FE2731488957f96e95DA9b081639d
+2026-08-01 17:36:18,507 [INFO] [15460/15809] Indexing 0xc39ed20b8F71bAf11f7A5e34C7bf0655b0D408ec
+2026-08-01 17:36:21,104 [INFO] [15461/15809] Indexing 0xbAFef71b9F02dAd61B13Ab8e70F0C27d8Ff8f452
+2026-08-01 17:36:24,568 [INFO] [15462/15809] Indexing 0xBE1e5A07c3Af9b648b2DeC7F193bc0835646725E
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/andre_paes/ChainScore/src/data/wallet_indexer.py", line 241, in <module>
+    main()
+  File "/home/andre_paes/ChainScore/src/data/wallet_indexer.py", line 232, in main
+    index_wallets(
+  File "/home/andre_paes/ChainScore/src/data/wallet_indexer.py", line 88, in index_wallets
+    normal_txs = client.get_normal_transactions(wallet)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/src/data/ethereum_client.py", line 95, in get_normal_transactions
+    data = self._etherscan_call(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 314, in iter
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/home/andre_paes/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/src/data/ethereum_client.py", line 75, in _etherscan_call
+    response = requests.get(
+               ^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/requests/adapters.py", line 486, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 464, in _make_request
+    self._validate_conn(conn)
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 1106, in _validate_conn
+    conn.connect()
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 759, in connect
+    self.sock = sock = self._new_conn()
+                       ^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andre_paes/ChainScore/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+KeyboardInterrupt

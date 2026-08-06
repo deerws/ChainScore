@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePortfolio } from "./providers/PortfolioProvider";
-import PortfolioSidebar from "./components/PortfolioSidebar";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -492,12 +491,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--background)' }}>
-
-    {/* ── PORTFOLIO SIDEBAR (right side via lg:order-2 in PortfolioSidebar) ── */}
-    <PortfolioSidebar />
-
-    <main className="flex-1 min-w-0 lg:order-1" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+    <main style={{ background: 'var(--background)' }}>
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         
         {/* ── HERO / REPORT TITLE ─────────────────────────────────────── */}
@@ -560,19 +555,8 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Hero Illustration + Portfolio toggle */}
+            {/* Hero Illustration */}
             <div className="hidden lg:flex flex-col items-end gap-3 w-56 xl:w-72 shrink-0">
-              {portfolio.length > 0 && (
-                <button
-                  onClick={() => setSidebarOpen(o => !o)}
-                  className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded border font-semibold transition-colors"
-                  style={{ borderColor: 'var(--primary)', color: 'var(--primary)', background: 'rgba(37,99,235,0.08)' }}
-                >
-                  <span>Portfolio</span>
-                  <span className="w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold" style={{ background: 'var(--primary)', color: '#fff' }}>{portfolio.length}</span>
-                  {sidebarOpen ? "→" : "←"}
-                </button>
-              )}
               <img
                 src="/hero-bull.png"
                 alt="ChainScore Bull - Wall Street meets Blockchain"
@@ -1045,3 +1029,4 @@ export default function Home() {
     </div>
   );
 }
+
