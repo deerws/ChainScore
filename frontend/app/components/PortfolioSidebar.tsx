@@ -95,9 +95,9 @@ export default function PortfolioSidebar() {
         onClick={() => setSidebarOpen(false)}
       />
 
-      {/* Fixed panel — slides in from right, always rendered */}
+      {/* Fixed panel — full-width on mobile, 320px on sm+ */}
       <div
-        className="fixed right-0 top-14 bottom-0 w-80 z-40 flex flex-col border-l shadow-2xl transition-transform duration-300 ease-in-out"
+        className="fixed right-0 top-14 bottom-0 w-full sm:w-80 z-40 flex flex-col border-l shadow-2xl transition-transform duration-300 ease-in-out"
         style={{
           background: "var(--card)",
           borderColor: "var(--border)",

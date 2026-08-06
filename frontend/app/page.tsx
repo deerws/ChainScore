@@ -493,16 +493,16 @@ export default function Home() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
     <main style={{ background: 'var(--background)' }}>
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* ── HERO / REPORT TITLE ─────────────────────────────────────── */}
         <section className="mb-10">
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1 max-w-3xl">
-              <h1 className="headline-serif text-4xl md:text-5xl mb-2">
+              <h1 className="headline-serif text-2xl sm:text-4xl md:text-5xl mb-2">
                 Wallet Credit Intelligence Report
               </h1>
-              <p className="text-lg mb-5" style={{ color: 'var(--muted)' }}>
+              <p className="text-base sm:text-lg mb-5" style={{ color: 'var(--muted)' }}>
                 On-chain credit risk analysis and behavioral scoring
               </p>
               
@@ -596,8 +596,8 @@ export default function Home() {
         {/* ── CREDIT SCORE SECTION (Two columns) ──────────────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* LEFT: Score Gauge */}
-          <div className="border p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center justify-between mb-6">
+          <div className="border p-4 sm:p-6 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>Credit Score</h2>
                 {watching && (
@@ -607,7 +607,7 @@ export default function Home() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge type="live" />
                 <button
                   onClick={() => watching ? stopWatch() : startWatch(apiResult!.wallet_address)}
@@ -635,32 +635,32 @@ export default function Home() {
               </p>
             )}
             <ScoreGauge score={score} />
-            <div className="flex justify-center gap-4 mt-4 text-[10px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--negative)' }} /> High</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--warning)' }} /> Med-High</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: '#CA8A04' }} /> Medium</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--primary)' }} /> Low</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: 'var(--positive)' }} /> V.Low</span>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-4 text-[10px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm shrink-0" style={{ background: 'var(--negative)' }} /> High</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm shrink-0" style={{ background: 'var(--warning)' }} /> Med-High</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm shrink-0" style={{ background: '#CA8A04' }} /> Medium</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm shrink-0" style={{ background: 'var(--primary)' }} /> Low</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm shrink-0" style={{ background: 'var(--positive)' }} /> V.Low</span>
             </div>
           </div>
 
           {/* RIGHT: KPI Cards */}
           <div className="flex flex-col gap-4">
             {/* Top row - main metrics */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="border p-4 rounded card-shadow relative" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
                 <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Risk Tier</p>
-                <p className="text-xl font-medium capitalize" style={{ color: 'var(--positive)' }}>
+                <p className="text-base sm:text-xl font-medium capitalize" style={{ color: 'var(--positive)' }}>
                   {riskTier.replace("_", " ")}
                 </p>
               </div>
-              <div className="border p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>PD Estimate</p>
-                <p className="text-xl font-medium">{(pd * 100).toFixed(1)}%</p>
+              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>PD Est.</p>
+                <p className="text-base sm:text-xl font-medium">{(pd * 100).toFixed(1)}%</p>
               </div>
-              <div className="border p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Valid For</p>
-                <p className="text-xl font-medium">{validDays}d</p>
+              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Valid</p>
+                <p className="text-base sm:text-xl font-medium">{validDays}d</p>
               </div>
             </div>
 
@@ -699,7 +699,7 @@ export default function Home() {
         {/* ── ON-CHAIN ANCHORING ──────────────────────────────────────── */}
         <section className="mb-10">
           <div className="border rounded card-shadow overflow-hidden" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-3">
                 <h2 className="text-xs uppercase tracking-wider font-medium" style={{ color: 'var(--muted)' }}>
                   On-Chain Score Proof
@@ -710,14 +710,14 @@ export default function Home() {
                 <button
                   onClick={anchorScore}
                   disabled={anchoring}
-                  className="text-xs px-3 py-1.5 rounded font-semibold transition-colors disabled:opacity-50"
+                  className="text-xs px-3 py-1.5 rounded font-semibold transition-colors disabled:opacity-50 shrink-0"
                   style={{ background: 'var(--primary)', color: '#fff' }}
                 >
-                  {anchoring ? "Anchoring…" : "Anchor Score on Sepolia →"}
+                  {anchoring ? "Anchoring…" : "Anchor on Sepolia →"}
                 </button>
               )}
             </div>
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
               {!anchorResult && !anchorError && (
                 <p className="text-sm" style={{ color: 'var(--muted)' }}>
                   Publish a cryptographic commitment of this score to the Sepolia testnet.

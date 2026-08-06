@@ -138,7 +138,7 @@ export default function About() {
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1100px] mx-auto w-full">
         {/* Left Panel - Table of Contents (sticky) */}
         <div
-          className="lg:w-52 shrink-0 p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4 lg:sticky lg:top-14 lg:self-start lg:max-h-[calc(100vh-3.5rem)] lg:overflow-y-auto"
+          className="lg:w-52 shrink-0 p-4 sm:p-6 border-b lg:border-b-0 lg:border-r flex flex-col gap-4 lg:sticky lg:top-14 lg:self-start lg:max-h-[calc(100vh-3.5rem)] lg:overflow-y-auto"
           style={{ borderColor: "var(--border)" }}
         >
           <div
