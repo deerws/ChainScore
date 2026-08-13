@@ -12,59 +12,77 @@ interface Famous {
   name: string;
   address: string;
   description: string;
+  longDescription: string;
   category: string;
   initials: string;
   note?: string;
+  learnMoreUrl: string;
 }
 
 const FAMOUS: Famous[] = [
   {
     name: "Vitalik Buterin",
     address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-    description: "Ethereum co-founder. Public wallet linked to vitalik.eth, known for large charity donations.",
+    description: "Ethereum co-founder. Public wallet linked to vitalik.eth.",
+    longDescription: "Co-founder of Ethereum and author of the original whitepaper. This public wallet (vitalik.eth) has been used for large charitable donations — most notably $1B+ in Shiba Inu tokens to Covid relief funds in India. Also active in DeFi experimentation and Gitcoin grants.",
     category: "Founder", initials: "VB", note: "vitalik.eth",
+    learnMoreUrl: "https://etherscan.io/address/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
   },
   {
     name: "Ethereum Foundation",
     address: "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
     description: "Non-profit funding Ethereum R&D, protocol research, and ecosystem grants.",
+    longDescription: "The Ethereum Foundation is the primary steward of Ethereum's development. This address holds a major portion of the foundation's ETH reserves and is used for funding core protocol research, client teams (Geth, Prysm, Lighthouse), and ecosystem grants via the ESP program.",
     category: "Foundation", initials: "EF",
+    learnMoreUrl: "https://etherscan.io/address/0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
   },
   {
     name: "Binance Cold Wallet",
     address: "0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8",
     description: "One of Binance's major cold-storage wallets holding billions in user assets.",
+    longDescription: "One of Binance's largest known cold storage addresses, historically holding 250,000+ ETH. This is a custodial wallet — the ETH here belongs to Binance users, not Binance itself. Movements from this address are closely watched as on-chain signals of exchange reserve health.",
     category: "Exchange", initials: "BN", note: "Binance 7",
+    learnMoreUrl: "https://etherscan.io/address/0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8",
   },
   {
     name: "Coinbase",
     address: "0x71660c4005BA85c37ccec55d0C4493E66Fe775d3",
     description: "Coinbase's primary on-chain storage. High volume reflecting custodial operations.",
+    longDescription: "Primary Coinbase custodial address for ETH and ERC-20 assets. Receives high-frequency deposits from retail users and institutional clients. Coinbase is one of the most regulated exchanges globally — on-chain visibility into their reserves is important for proof-of-reserves audits.",
     category: "Exchange", initials: "CB",
+    learnMoreUrl: "https://etherscan.io/address/0x71660c4005BA85c37ccec55d0C4493E66Fe775d3",
   },
   {
     name: "Kraken",
     address: "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0",
     description: "Kraken exchange hot wallet. Frequent large transfers typical of custodial flow.",
+    longDescription: "Kraken's hot wallet for ETH operations. Hot wallets are connected to the internet and handle day-to-day withdrawals, making them higher-risk than cold storage. Kraken has been transparent about publishing their cold/hot wallet addresses for public verification.",
     category: "Exchange", initials: "KR",
+    learnMoreUrl: "https://etherscan.io/address/0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0",
   },
   {
     name: "Punk6529",
     address: "0x6CC5F688a315f3dC28A7781717a9A798a59fDA7b",
     description: "Anonymous NFT collector famous for CryptoPunks holdings and open-metaverse advocacy.",
+    longDescription: "One of the most influential anonymous voices in the NFT space. Holds a significant CryptoPunks collection and has been a leading advocate for the open metaverse and decentralized digital identity. Active on Twitter/X with detailed threads on NFT culture, digital ownership, and crypto geopolitics.",
     category: "NFT", initials: "P6", note: "6529.eth",
+    learnMoreUrl: "https://etherscan.io/address/0x6CC5F688a315f3dC28A7781717a9A798a59fDA7b",
   },
   {
     name: "Justin Sun",
     address: "0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296",
     description: "TRON founder and active DeFi participant. Known for large Aave and Compound positions.",
+    longDescription: "Founder of TRON blockchain and acquirer of BitTorrent. Known for some of the largest individual DeFi positions — at peak holding over $1B in assets across Aave, Compound, and Curve. His wallet activity is closely tracked as a market signal. Also famously won a charity auction for a lunch with Warren Buffett.",
     category: "DeFi", initials: "JS",
+    learnMoreUrl: "https://etherscan.io/address/0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296",
   },
   {
     name: "Wintermute",
     address: "0x4d9085DED8F6a2f76099c1e5aeD4b94dD73bBBF",
     description: "Algorithmic trading firm and DeFi liquidity provider. One of the top on-chain market makers.",
+    longDescription: "London-based algorithmic trading firm and one of the largest DeFi market makers. Provides liquidity across centralized and decentralized venues. In 2022, their DeFi wallet was exploited for ~$160M via a Profanity address vulnerability — a notable case study in operational security for DeFi participants.",
     category: "DeFi", initials: "WM",
+    learnMoreUrl: "https://etherscan.io/address/0x4d9085DED8F6a2f76099c1e5aeD4b94dD73bBBF",
   },
 ];
 
@@ -176,9 +194,17 @@ export default function ExplorePage() {
 
 // ── Famous Wallets tab ──────────────────────────────────────────────────────
 
+interface RecentActivity {
+  txCount: number | null;
+  lastSeen: string | null;
+  loading: boolean;
+}
+
 function FamousTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
   const [filter, setFilter] = useState("All");
   const [copied, setCopied] = useState<string | null>(null);
+  const [infoWallet, setInfoWallet] = useState<Famous | null>(null);
+  const [activity, setActivity] = useState<RecentActivity>({ txCount: null, lastSeen: null, loading: false });
 
   const filtered = filter === "All" ? FAMOUS : FAMOUS.filter((w) => w.category === filter);
 
@@ -186,6 +212,43 @@ function FamousTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
     navigator.clipboard.writeText(address).catch(() => {});
     setCopied(address);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  async function openInfo(wallet: Famous) {
+    setInfoWallet(wallet);
+    setActivity({ txCount: null, lastSeen: null, loading: true });
+
+    try {
+      // Yesterday's block range: ~6500 blocks/day
+      const latestRes = await fetch(
+        `https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_blockNumber&apikey=`
+      );
+      const latestJson = await latestRes.json();
+      const latestBlock = parseInt(latestJson.result, 16);
+      const startBlock = latestBlock - 6500;
+
+      const res = await fetch(
+        `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist` +
+        `&address=${wallet.address}&startblock=${startBlock}&endblock=${latestBlock}` +
+        `&sort=desc&offset=1&page=1&apikey=`
+      );
+      const json = await res.json();
+      const txs: any[] = Array.isArray(json.result) ? json.result : [];
+      const lastTx = txs[0];
+      const lastSeen = lastTx
+        ? new Date(parseInt(lastTx.timeStamp) * 1000).toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric",
+          })
+        : null;
+      setActivity({ txCount: txs.length, lastSeen, loading: false });
+    } catch {
+      setActivity({ txCount: null, lastSeen: null, loading: false });
+    }
+  }
+
+  function closeInfo() {
+    setInfoWallet(null);
+    setActivity({ txCount: null, lastSeen: null, loading: false });
   }
 
   return (
@@ -246,6 +309,16 @@ function FamousTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
                     {wallet.category}
                   </span>
                 </div>
+
+                {/* Info button */}
+                <button
+                  onClick={() => openInfo(wallet)}
+                  title="About this wallet"
+                  className="shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-[11px] font-bold transition-colors hover:opacity-70"
+                  style={{ borderColor: "var(--border)", color: "var(--muted)" }}
+                >
+                  i
+                </button>
               </div>
 
               <p className="text-xs leading-relaxed flex-1" style={{ color: "var(--muted)" }}>
@@ -280,6 +353,128 @@ function FamousTab({ onAnalyze }: { onAnalyze: (addr: string) => void }) {
           );
         })}
       </div>
+
+      {/* Info panel backdrop + panel */}
+      {infoWallet && (() => {
+        const col = CAT_STYLE[infoWallet.category] ?? CAT_STYLE.Founder;
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              onClick={closeInfo}
+            />
+
+            {/* Panel — bottom sheet on mobile, centered modal on sm+ */}
+            <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4">
+              <div
+                className="w-full sm:w-[420px] rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl border"
+                style={{ background: "var(--card)", borderColor: "var(--border)" }}
+              >
+                {/* Header */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div
+                    className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center text-sm font-bold text-white"
+                    style={{ background: col.text }}
+                  >
+                    {infoWallet.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                        {infoWallet.name}
+                      </p>
+                      {infoWallet.note && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: col.bg, color: col.text }}>
+                          {infoWallet.note}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: col.text }}>
+                      {infoWallet.category}
+                    </span>
+                  </div>
+                  <button
+                    onClick={closeInfo}
+                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs transition-opacity hover:opacity-70"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Description */}
+                <p className="text-xs leading-relaxed mb-4" style={{ color: "var(--muted)" }}>
+                  {infoWallet.longDescription}
+                </p>
+
+                {/* Yesterday's activity */}
+                <div
+                  className="rounded-lg px-3 py-2.5 mb-4 flex items-center gap-3"
+                  style={{ background: "var(--background)" }}
+                >
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "var(--muted)" }}>
+                      Activity last 24 h
+                    </p>
+                    {activity.loading ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" style={{ color: "var(--primary)" }} />
+                        <span className="text-[11px]" style={{ color: "var(--muted)" }}>Fetching…</span>
+                      </div>
+                    ) : activity.txCount !== null ? (
+                      <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                        {activity.txCount === 0
+                          ? "No transactions yesterday"
+                          : `${activity.txCount} transaction${activity.txCount !== 1 ? "s" : ""}${activity.lastSeen ? ` · last ${activity.lastSeen}` : ""}`}
+                      </p>
+                    ) : (
+                      <p className="text-[11px]" style={{ color: "var(--muted)" }}>Unavailable</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div
+                  className="px-3 py-2 rounded font-mono text-[11px] flex items-center justify-between gap-2 mb-4"
+                  style={{ background: "var(--background)" }}
+                >
+                  <span className="truncate" style={{ color: "var(--muted)" }}>
+                    {infoWallet.address.slice(0, 10)}…{infoWallet.address.slice(-8)}
+                  </span>
+                  <button
+                    onClick={() => handleCopy(infoWallet.address)}
+                    className="shrink-0 text-[10px] transition-opacity hover:opacity-70"
+                    style={{ color: copied === infoWallet.address ? "var(--positive)" : "var(--muted)" }}
+                  >
+                    {copied === infoWallet.address ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <a
+                    href={infoWallet.learnMoreUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 text-xs font-medium rounded border text-center transition-opacity hover:opacity-70"
+                    style={{ borderColor: "var(--border)", color: "var(--muted)" }}
+                  >
+                    View on Etherscan ↗
+                  </a>
+                  <button
+                    onClick={() => { closeInfo(); onAnalyze(infoWallet.address); }}
+                    className="flex-1 py-2 text-xs font-semibold rounded transition-opacity hover:opacity-80"
+                    style={{ background: "var(--primary)", color: "#fff" }}
+                  >
+                    Analyze →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </>
   );
 }
