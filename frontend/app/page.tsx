@@ -98,6 +98,19 @@ const RECENT_TRANSACTIONS = [
   { date: "Apr 28, 2026", protocol: "MakerDAO", type: "Repay", amount: "45 ETH", usd: "$112,500" },
 ];
 
+// ── Letter grade ───────────────────────────────────────────────────────────
+
+function scoreToGrade(score: number): string {
+  if (score >= 900) return "AAA";
+  if (score >= 800) return "AA";
+  if (score >= 700) return "A";
+  if (score >= 600) return "BBB";
+  if (score >= 500) return "BB";
+  if (score >= 400) return "B";
+  if (score >= 300) return "CCC";
+  return "D";
+}
+
 // ── Semicircle Gauge ───────────────────────────────────────────────────────
 
 function ScoreGauge({ score }: { score: number }) {
@@ -128,9 +141,11 @@ function ScoreGauge({ score }: { score: number }) {
 
   const end = arcPoint(angle);
 
+  const grade = scoreToGrade(score);
+
   return (
-    <div className="relative w-full max-w-[280px] mx-auto">
-      <svg viewBox="0 0 200 120" className="w-full">
+    <div className="relative w-full max-w-[300px] mx-auto">
+      <svg viewBox="0 0 200 130" className="w-full">
         {/* Background arc segments */}
         {bands.map((band, i) => {
           const p1 = arcPoint((band.start / 100) * 180);
@@ -142,31 +157,48 @@ function ScoreGauge({ score }: { score: number }) {
               fill="none"
               stroke="currentColor"
               className={band.className}
-              strokeWidth="12"
+              strokeWidth="10"
               strokeLinecap="butt"
-              opacity={0.25}
+              opacity={0.2}
             />
           );
         })}
 
-        {/* Active arc — large-arc-flag always 0 (arc ≤ 180°) */}
+        {/* Active arc */}
         {angle > 0 && (
           <path
             d={`M ${arcPoint(0).x} ${arcPoint(0).y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`}
             fill="none"
             stroke="currentColor"
             className={activeClass}
-            strokeWidth="12"
+            strokeWidth="10"
             strokeLinecap="round"
           />
         )}
-        
-        {/* Center text */}
-        <text x="100" y="85" textAnchor="middle" className="headline-serif text-4xl" fill="currentColor">
-          {score}
+
+        {/* Letter grade — primary display */}
+        <text
+          x="100" y="78"
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontWeight="700"
+          fontSize="32"
+          fill="currentColor"
+        >
+          {grade}
         </text>
-        <text x="100" y="105" textAnchor="middle" className="text-xs" style={{ fill: 'var(--muted)' }}>
-          / 1000
+
+        {/* Numeric score — secondary */}
+        <text
+          x="100" y="100"
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontWeight="400"
+          fontSize="14"
+          fill="currentColor"
+          opacity="0.7"
+        >
+          {score} / 1000
         </text>
       </svg>
     </div>
@@ -647,20 +679,38 @@ export default function Home() {
           {/* RIGHT: KPI Cards */}
           <div className="flex flex-col gap-4">
             {/* Top row - main metrics */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Risk Tier</p>
-                <p className="text-base sm:text-xl font-medium capitalize" style={{ color: 'var(--positive)' }}>
-                  {riskTier.replace("_", " ")}
-                </p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {/* Risk Tier */}
+              <div className="border p-3 sm:p-4 rounded card-shadow flex flex-col justify-between" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-[9px] uppercase tracking-widest font-medium mb-2" style={{ color: 'var(--muted)' }}>Risk Tier</p>
+                <div>
+                  <p className="text-lg sm:text-2xl font-bold font-mono capitalize leading-none mb-0.5"
+                    style={{ color: riskTier === "very_low" || riskTier === "low" ? "var(--positive)" : riskTier === "medium" ? "var(--warning)" : "var(--negative)" }}>
+                    {scoreToGrade(score)}
+                  </p>
+                  <p className="text-[10px] capitalize" style={{ color: 'var(--muted)' }}>{riskTier.replace("_", " ")}</p>
+                </div>
               </div>
-              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>PD Est.</p>
-                <p className="text-base sm:text-xl font-medium">{(pd * 100).toFixed(1)}%</p>
+              {/* PD */}
+              <div className="border p-3 sm:p-4 rounded card-shadow flex flex-col justify-between" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-[9px] uppercase tracking-widest font-medium mb-2" style={{ color: 'var(--muted)' }}>Prob. Default</p>
+                <div>
+                  <p className="text-lg sm:text-2xl font-bold font-mono leading-none mb-0.5"
+                    style={{ color: pd < 0.05 ? "var(--positive)" : pd < 0.15 ? "var(--warning)" : "var(--negative)" }}>
+                    {(pd * 100).toFixed(1)}%
+                  </p>
+                  <p className="text-[10px]" style={{ color: 'var(--muted)' }}>annualized PD</p>
+                </div>
               </div>
-              <div className="border p-3 sm:p-4 rounded card-shadow" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>Valid</p>
-                <p className="text-base sm:text-xl font-medium">{validDays}d</p>
+              {/* Valid */}
+              <div className="border p-3 sm:p-4 rounded card-shadow flex flex-col justify-between" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-[9px] uppercase tracking-widest font-medium mb-2" style={{ color: 'var(--muted)' }}>Score Valid</p>
+                <div>
+                  <p className="text-lg sm:text-2xl font-bold font-mono leading-none mb-0.5" style={{ color: 'var(--foreground)' }}>
+                    {validDays}d
+                  </p>
+                  <p className="text-[10px]" style={{ color: 'var(--muted)' }}>remaining</p>
+                </div>
               </div>
             </div>
 

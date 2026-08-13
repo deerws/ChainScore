@@ -132,9 +132,93 @@ function Step({
   );
 }
 
+function StatTicker({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xl sm:text-2xl font-bold font-mono" style={{ color: "var(--foreground)" }}>
+        {value}
+      </span>
+      <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--muted)" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export default function About() {
   return (
     <main className="flex flex-col flex-1">
+
+      {/* ── Institutional Hero ─────────────────────────────────────────── */}
+      <div className="border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="max-w-[1100px] mx-auto px-6 sm:px-10 py-14 sm:py-20">
+
+          {/* Eyebrow */}
+          <div className="flex items-center gap-2 mb-5">
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: "var(--positive)" }}
+            />
+            <span className="text-[10px] uppercase tracking-widest font-mono" style={{ color: "var(--muted)" }}>
+              Research Prototype · Open Source
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4 max-w-3xl"
+            style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
+          >
+            Institutional Credit Intelligence
+            <br />
+            for DeFi Wallets
+          </h1>
+
+          {/* Sub */}
+          <p className="text-base sm:text-lg leading-relaxed mb-10 max-w-2xl" style={{ color: "var(--muted)" }}>
+            ChainScore scores Ethereum wallets (0–1000) and estimates probability of default
+            using on-chain behavior — wallet age, repayment history, protocol diversity,
+            and liquidation events across Aave V2 and Compound V3.
+          </p>
+
+          {/* Stat tickers */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10 pb-10 border-b" style={{ borderColor: "var(--border)" }}>
+            <StatTicker value="49,748" label="Liquidation events labeled" />
+            <StatTicker value="0.81" label="AUC-ROC (LightGBM)" />
+            <StatTicker value="43" label="Behavioral features" />
+            <StatTicker value="v1 API" label="REST endpoint · JSON" />
+          </div>
+
+          {/* CTAs */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="px-5 py-2.5 text-sm font-semibold rounded transition-opacity hover:opacity-80"
+              style={{ background: "var(--primary)", color: "#fff" }}
+            >
+              Try the Dashboard →
+            </Link>
+            <a
+              href="#pipeline"
+              className="px-5 py-2.5 text-sm font-medium rounded border transition-opacity hover:opacity-70"
+              style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+            >
+              Read Methodology
+            </a>
+            <a
+              href="https://github.com/andre-paes/ChainScore"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 text-sm font-medium transition-opacity hover:opacity-70"
+              style={{ color: "var(--muted)" }}
+            >
+              GitHub ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Methodology content ────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1100px] mx-auto w-full">
         {/* Left Panel - Table of Contents (sticky) */}
         <div
